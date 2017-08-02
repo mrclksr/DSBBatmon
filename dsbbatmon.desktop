@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=DSBBatmon
+Exec=dsbbatmon
+Icon=battery
+Terminal=false
+StartupNotify=false
+Type=Application
+Categories=System;Application
+
