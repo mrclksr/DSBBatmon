@@ -46,6 +46,9 @@ dsbcfg_vardef_t vardefs[] = {
 		"suspend_cmd", DSBCFG_VAR_STRING, CFG_SUSPEND_CMD,
 		DSBCFG_VAL("sudo acpiconf -s 3")
 	},
-
+	{
+		"use_icon_theme", DSBCFG_VAR_BOOLEAN, CFG_USE_ICON_THEME,
+		DSBCFG_VAL(true)
+	}
 };
 
