@@ -242,6 +242,7 @@ void BattIndicator::showConfigMenu()
 
 void BattIndicator::showShutdownWin()
 {
+	int ret;
 	bool doSuspend = dsbcfg_getval(cfg, CFG_SUSPEND).boolean;
 
 	Countdown countdownWin(doSuspend, 30, this);
@@ -254,9 +255,25 @@ void BattIndicator::showShutdownWin()
 		    dsbcfg_getval(cfg, CFG_SHUTDOWN_CMD).string;
 
 		dsbcfg_write(PROGRAM, "config", cfg);
-
-		(void)execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-		qh_err(0, EXIT_FAILURE, "Couldn't execute %", cmd);
+		if (!doSuspend) {
+			/* Shutdown. Never return. */
+			(void)execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+			qh_err(0, EXIT_FAILURE, "Couldn't execute %", cmd);
+		} else {
+			/* Suspend. Do not not exit */
+			switch ((ret = system(cmd))) {
+			case   0:
+				break;
+			case  -1:
+				qh_err(0, EXIT_FAILURE, "system(%s)", cmd);
+			case 127:
+				qh_err(0, EXIT_FAILURE, "Failes to execute " \
+				    "shell.");
+			default:
+				qh_warnx(0, "Command %s returned an exit " \
+				    "status != 0: %d", ret);
+			}
+		}
 	}
 }
 
