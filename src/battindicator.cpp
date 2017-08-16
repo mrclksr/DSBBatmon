@@ -168,6 +168,8 @@ void BattIndicator::updateToolTip()
 		tt = QString(tr("Status: Discharging\nCapacity: %1%"));
 	else if (acpi.status == ACPI_STATUS_ACLINE)
 		tt = QString(tr("Status: Running on AC power"));
+	else
+		return;
 	if (acpi.status != ACPI_STATUS_ACLINE)
 		tt = tt.arg(acpi.cap);
 	if (acpi.min != -1 && acpi.status != ACPI_STATUS_ACLINE) {
