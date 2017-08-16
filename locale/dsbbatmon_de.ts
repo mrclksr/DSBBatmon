@@ -4,48 +4,48 @@
 <context>
     <name>BattIndicator</name>
     <message>
-        <location filename="../src/battindicator.cpp" line="112"/>
+        <location filename="../src/battindicator.cpp" line="175"/>
         <source>Status: Charging
 Capacity: %1%</source>
         <translation>Status: Laden
 Kapazität: %1%</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="114"/>
+        <location filename="../src/battindicator.cpp" line="177"/>
         <source>Status: Discharging
 Capacity: %1%</source>
         <translation>Status: Entladen
 Kapazität: %1%</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="116"/>
+        <location filename="../src/battindicator.cpp" line="179"/>
         <source>Status: Running on AC power</source>
         <translation>Status: Netzteil</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="122"/>
+        <location filename="../src/battindicator.cpp" line="187"/>
         <source>
 Time remaining: %1:%2</source>
         <translation>
 Zeit verbleibend:%1:%2</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="156"/>
+        <location filename="../src/battindicator.cpp" line="223"/>
         <source>&amp;Quit</source>
         <translation>&amp;Beenden</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="158"/>
+        <location filename="../src/battindicator.cpp" line="225"/>
         <source>&amp;Preferences</source>
         <translation>&amp;Einstellungen</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="198"/>
+        <location filename="../src/battindicator.cpp" line="265"/>
         <source>Battery capacity at %1%</source>
         <translation>Akkuladung by %1%</translation>
     </message>
     <message>
-        <location filename="../src/battindicator.cpp" line="199"/>
+        <location filename="../src/battindicator.cpp" line="266"/>
         <source>Warning</source>
         <translation>Warnung</translation>
     </message>
@@ -95,42 +95,47 @@ Zeit verbleibend:%1:%2</translation>
         <translation>Automatisch in Ruhemodus versetzen/Herunterfahren</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="42"/>
+        <location filename="../src/preferences.cpp" line="39"/>
+        <source>Use theme icons for tray</source>
+        <translation>Benutze Symbolthema für Tray</translation>
+    </message>
+    <message>
+        <location filename="../src/preferences.cpp" line="44"/>
         <source>Suspend</source>
         <translation>Ruhemodus</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="43"/>
+        <location filename="../src/preferences.cpp" line="45"/>
         <source>Shutdown</source>
         <translation>Herunterfahren</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="49"/>
+        <location filename="../src/preferences.cpp" line="52"/>
         <source>&amp;Ok</source>
         <translation>&amp;Ok</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="50"/>
+        <location filename="../src/preferences.cpp" line="53"/>
         <source>&amp;Cancel</source>
         <translation>&amp;Abbrechen</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="52"/>
+        <location filename="../src/preferences.cpp" line="55"/>
         <source>if battery capacity drops below</source>
         <translation>bei einer Akkuladung unter</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="85"/>
+        <location filename="../src/preferences.cpp" line="95"/>
         <source>Suspend command:</source>
         <translation>Suspend-Befehl:</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="86"/>
+        <location filename="../src/preferences.cpp" line="96"/>
         <source>Shutdown command:</source>
         <translation>Shutdown-Befehl:</translation>
     </message>
     <message>
-        <location filename="../src/preferences.cpp" line="98"/>
+        <location filename="../src/preferences.cpp" line="110"/>
         <source>Preferences</source>
         <translation>Einstellungen</translation>
     </message>
