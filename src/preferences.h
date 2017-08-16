@@ -48,6 +48,7 @@ private:
 	QWidget      *container;
 	QSpinBox     *shutdownSb;
 	QCheckBox    *autoShutdownCb;
+	QCheckBox    *useIconThemeCb;
 	QLineEdit    *shutdownCmd;
 	QLineEdit    *suspendCmd;
 	QRadioButton *shutdownRb;

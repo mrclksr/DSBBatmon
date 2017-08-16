@@ -36,11 +36,14 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	    NULL);
 	shutdownSb	     = new QSpinBox(this);
 	autoShutdownCb	     = new QCheckBox(tr("Auto suspend/shutdown"), this);
+	useIconThemeCb	     = new QCheckBox(tr("Use theme icons for tray"),
+				   this);
 	container	     = new QWidget();
 	shutdownCmd	     = new QLineEdit();
 	suspendCmd	     = new QLineEdit();
 	suspendRb	     = new QRadioButton(tr("Suspend"));
 	shutdownRb	     = new QRadioButton(tr("Shutdown"));
+	QFrame	    *line    = new QFrame(this);
 	QFormLayout *form    = new QFormLayout;
 	QHBoxLayout *hbox    = new QHBoxLayout();
 	QHBoxLayout *bbox    = new QHBoxLayout();
@@ -68,7 +71,14 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 		container->setEnabled(true);
 	else
 		container->setEnabled(false);
-	
+
+	line->setFrameShape(QFrame::HLine);
+	line->setFrameShadow(QFrame::Sunken);
+
+	useIconThemeCb->setCheckState(
+	    dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean ? Qt::Checked : \
+	    Qt::Unchecked);
+
 	bbox->addWidget(ok, 1, Qt::AlignRight);
 	bbox->addWidget(cancel, 0, Qt::AlignRight);
 
@@ -88,9 +98,11 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	form->setContentsMargins(0, 0, 0, 0);
 	vbox->setContentsMargins(0, 0, 0, 0);
 	vbox->addLayout(form);
-	layout->addWidget(container);
 
+	layout->addWidget(container);
 	layout->addWidget(autoShutdownCb);
+	layout->addWidget(line);
+	layout->addWidget(useIconThemeCb);
 	layout->addLayout(bbox);
 	vbox->addStretch(1);
 	setLayout(layout);
@@ -123,7 +135,8 @@ Preferences::acceptSlot()
 	dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer = shutdownSb->value();
 	dsbcfg_getval(cfg, CFG_SUSPEND).boolean =
 	    suspendRb->isChecked() ? true : false;
-
+	dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean =
+		useIconThemeCb->checkState() == Qt::Checked ? true : false;
 	if (strcmp(dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string,
 	    suspendArr.data()) != 0) {
 		free(dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string);
