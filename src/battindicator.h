@@ -57,6 +57,7 @@ private:
 	int  lastCap = -1;
 	bool missingIcon = false;
 	bool shutdown;
+	bool useIconTheme;
 	bool autoShutdown;
 	bool shutdownCanceled;
 	QIcon cBattIcon[5];

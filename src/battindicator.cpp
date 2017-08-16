@@ -41,6 +41,7 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 
 	if (init_acpi(&acpi) == -1)
 		qh_err(0, EXIT_FAILURE, "init_acpi()");
+	useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
 	loadIcons();
 	updateSettings();
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
@@ -54,6 +55,13 @@ void BattIndicator::updateSettings()
 	capShutdown  = dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer;
 	autoShutdown = dsbcfg_getval(cfg, CFG_AUTOSHUTDOWN).boolean;
 
+	if (useIconTheme != dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean) {
+		useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
+		loadIcons();
+		/* Force updating the tray icon */
+		lastCap = acpi.cap + 1;
+		updateIcon();
+	}
 	if (acpi.cap > capShutdown)
 		shutdownCanceled = false;
 }
@@ -89,6 +97,7 @@ QIcon BattIndicator::createIcon(int status)
 
 void BattIndicator::loadIcons()
 {
+	missingIcon = false;
 
 	dBattIcon[4] = qh_loadIcon("battery-full-symbolic", "battery", NULL);
 	dBattIcon[3] = qh_loadIcon("battery-good-symbolic", "battery", NULL);
@@ -131,7 +140,7 @@ void BattIndicator::updateIcon()
 {
 	int i;
 
-	if (missingIcon) {
+	if (missingIcon || !useIconTheme) {
 		if (acpi.cap == lastCap)
 			return;
 		lastCap = acpi.cap;
