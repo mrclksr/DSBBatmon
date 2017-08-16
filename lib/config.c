@@ -49,6 +49,10 @@ dsbcfg_vardef_t vardefs[] = {
 	{
 		"use_icon_theme", DSBCFG_VAR_BOOLEAN, CFG_USE_ICON_THEME,
 		DSBCFG_VAL(true)
+	},
+	{
+		"poll_interval", DSBCFG_VAR_INTEGER, CFG_POLL_INTERVAL,
+		DSBCFG_VAL(5)
 	}
 };
 
