@@ -24,6 +24,7 @@
 
 #include <QTimer>
 #include <QSystemTrayIcon>
+#include <QPainter>
 #include <unistd.h>
 #include "countdown.h"
 #include "preferences.h"
@@ -57,21 +58,64 @@ void BattIndicator::updateSettings()
 		shutdownCanceled = false;
 }
 
+QIcon BattIndicator::createIcon(int status)
+{
+	QColor charge(96, 255, 96);
+	QColor discharge(239, 239, 92);
+	QColor critical(255, 0, 0);
+	QColor color;
+	QPixmap pix(10, 24);
+
+	pix.fill(QColor(0, 0, 0, 0));
+	QPainter p(&pix);
+
+	if (status < 0 && -status < 20)
+		color = critical;
+	else if (status < 0)
+		color = discharge;
+	else
+		color = charge;
+	p.setPen(color);
+	int x = (21 * status / 100);
+	if (x < 0)
+		x *= -1;
+	p.drawRect(4, 0, 2, 1);
+	p.drawRect(0, 1, 9, 22);
+	p.fillRect(QRectF(1, 22 - x, 8, x + 1), color);
+	QIcon icon(pix);
+
+	return (icon);
+}
+
 void BattIndicator::loadIcons()
 {
-	dBattIcon[4] = qh_loadIcon("battery-full-symbolic", NULL);
-	dBattIcon[3] = qh_loadIcon("battery-good-symbolic", NULL);
-	dBattIcon[2] = qh_loadIcon("battery-low-symbolic", NULL);
-	dBattIcon[1] = qh_loadIcon("battery-caution-symbolic", NULL);
-	dBattIcon[0] = qh_loadIcon("battery-empty-symbolic", NULL);
 
-	cBattIcon[4] = qh_loadIcon("battery-full-charging-symbolic", NULL);
-	cBattIcon[3] = qh_loadIcon("battery-good-charging-symbolic", NULL);
-	cBattIcon[2] = qh_loadIcon("battery-low-charging-symbolic", NULL);
-	cBattIcon[1] = qh_loadIcon("battery-caution-charging-symbolic", NULL);
-	cBattIcon[0] = qh_loadIcon("battery-empty-charging-symbolic", NULL);
+	dBattIcon[4] = qh_loadIcon("battery-full-symbolic", "battery", NULL);
+	dBattIcon[3] = qh_loadIcon("battery-good-symbolic", "battery", NULL);
+	dBattIcon[2] = qh_loadIcon("battery-low-symbolic", "battery-low",
+	    NULL);
+	dBattIcon[1] = qh_loadIcon("battery-caution-symbolic",
+	    "battery-caution", NULL);
+	dBattIcon[0] = qh_loadIcon("battery-empty-symbolic", "battery-low",
+	    NULL);
+	cBattIcon[4] = qh_loadIcon("battery-full-charging-symbolic", "battery",
+	    NULL);
+	cBattIcon[3] = qh_loadIcon("battery-good-charging-symbolic", "battery",
+	    NULL);
+	cBattIcon[2] = qh_loadIcon("battery-low-charging-symbolic",
+	    "battery-low", NULL);
+	cBattIcon[1] = qh_loadIcon("battery-caution-charging-symbolic",
+	    "battery-caution", NULL);
+	cBattIcon[0] = qh_loadIcon("battery-empty-charging-symbolic",
+	    "battery-low", NULL);
+	acIcon = qh_loadIcon("battery-full-charged-symbolic", "battery", NULL);
 
-	acIcon = qh_loadIcon("battery-full-charged-symbolic", NULL);
+	for (int i = 0; i < 5 && !missingIcon; i++) {
+		if (dBattIcon[i].isNull())
+			missingIcon = true;
+		if (cBattIcon[i].isNull())
+			missingIcon = true;
+	}
 }
 
 void BattIndicator::trayClicked(QSystemTrayIcon::ActivationReason reason)
@@ -86,6 +130,16 @@ void BattIndicator::trayClicked(QSystemTrayIcon::ActivationReason reason)
 void BattIndicator::updateIcon()
 {
 	int i;
+
+	if (missingIcon) {
+		if (acpi.cap == lastCap)
+			return;
+		lastCap = acpi.cap;
+		int status = acpi.cap *
+		    (acpi.status == ACPI_STATUS_DISCHARGING ? -1 : 1);
+		trayIcon->setIcon(createIcon(status));
+		return;
+	}
 	if (acpi.cap >= 90)
 		i = 4;
 	else if (acpi.cap < 5)
@@ -152,6 +206,8 @@ QMenu *BattIndicator::createTrayMenu()
 {
 	QIcon quitIcon  = qh_loadIcon("application-exit", NULL);
 	QIcon prefsIcon = qh_loadIcon("preferences-system", NULL);
+	if (quitIcon.isNull())
+		quitIcon = qh_loadStockIcon(QStyle::SP_DialogCloseButton);
 	QMenu   *menu = new QMenu(this);
 	QAction *quitAction = new QAction(quitIcon, tr("&Quit"), this);
         QAction *preferencesAction = new QAction(prefsIcon,

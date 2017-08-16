@@ -50,9 +50,12 @@ private:
 	void updateSettings();
 	void loadIcons();
 	void createTrayIcon();
+	QIcon createIcon(int status);
 	QMenu *createTrayMenu();
 
 	int  capShutdown;
+	int  lastCap = -1;
+	bool missingIcon = false;
 	bool shutdown;
 	bool autoShutdown;
 	bool shutdownCanceled;
