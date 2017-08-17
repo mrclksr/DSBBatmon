@@ -54,7 +54,7 @@ private:
 	QMenu *createTrayMenu();
 
 	int  capShutdown;
-	int  lastCap = -1;
+	int  pollInterval = 5;
 	bool missingIcon = false;
 	bool shutdown;
 	bool useIconTheme;
@@ -67,6 +67,7 @@ private:
 	acpi_t acpi_prev;
 	dsbcfg_t *cfg;
 	QTimer *trayTimer;
+	QTimer *pollTimer;
 	QSystemTrayIcon *trayIcon;
 };
 
