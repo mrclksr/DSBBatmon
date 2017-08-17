@@ -44,9 +44,12 @@ public slots:
 	void catchCbStateChanged(int state);
 	void acceptSlot();
 private:
+	QFrame *mkLine();
+private:
 	dsbcfg_t     *cfg;
 	QWidget      *container;
 	QSpinBox     *shutdownSb;
+	QSpinBox     *pollIvalSb;
 	QCheckBox    *autoShutdownCb;
 	QCheckBox    *useIconThemeCb;
 	QLineEdit    *shutdownCmd;

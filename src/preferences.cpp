@@ -35,6 +35,7 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	QIcon cancelIcon = qh_loadStockIcon(QStyle::SP_DialogCancelButton,
 	    NULL);
 	shutdownSb	     = new QSpinBox(this);
+	pollIvalSb	     = new QSpinBox(this);
 	autoShutdownCb	     = new QCheckBox(tr("Auto suspend/shutdown"), this);
 	useIconThemeCb	     = new QCheckBox(tr("Use theme icons for tray"),
 				   this);
@@ -43,8 +44,8 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	suspendCmd	     = new QLineEdit();
 	suspendRb	     = new QRadioButton(tr("Suspend"));
 	shutdownRb	     = new QRadioButton(tr("Shutdown"));
-	QFrame	    *line    = new QFrame(this);
 	QFormLayout *form    = new QFormLayout;
+	QFormLayout *form2   = new QFormLayout;
 	QHBoxLayout *hbox    = new QHBoxLayout();
 	QHBoxLayout *bbox    = new QHBoxLayout();
 	QVBoxLayout *vbox    = new QVBoxLayout(container);
@@ -55,26 +56,24 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	QLabel *str   = new QLabel(tr("if battery capacity drops below"));
 	QLabel *slash = new QLabel("/");
 
+	pollIvalSb->setMinimum(1);
+	pollIvalSb->setSuffix(" s");
 	shutdownSb->setSuffix(" %");
 
 	shutdownCmd->insert(
 	    QString(dsbcfg_getval(cfg, CFG_SHUTDOWN_CMD).string));
 	suspendCmd->insert(
 	    QString(dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string));
-	shutdownSb->setValue(
-	    dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer);
 	autoShutdownCb->setCheckState(
 	    dsbcfg_getval(cfg, CFG_AUTOSHUTDOWN).boolean ? Qt::Checked : \
 	    Qt::Unchecked);
+	shutdownSb->setValue(dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer);
+	pollIvalSb->setValue(dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer);
 
 	if (autoShutdownCb->checkState() != Qt::Unchecked)
 		container->setEnabled(true);
 	else
 		container->setEnabled(false);
-
-	line->setFrameShape(QFrame::HLine);
-	line->setFrameShadow(QFrame::Sunken);
-
 	useIconThemeCb->setCheckState(
 	    dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean ? Qt::Checked : \
 	    Qt::Unchecked);
@@ -101,7 +100,12 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 
 	layout->addWidget(container);
 	layout->addWidget(autoShutdownCb);
-	layout->addWidget(line);
+	layout->addWidget(mkLine());
+
+	form2->addRow(new QLabel(tr("ACPI poll interval:")), pollIvalSb);
+	form2->addRow(mkLine());
+	layout->addLayout(form2);
+
 	layout->addWidget(useIconThemeCb);
 	layout->addLayout(bbox);
 	vbox->addStretch(1);
@@ -124,6 +128,16 @@ Preferences::catchCbStateChanged(int state)
 		container->setEnabled(false);
 }
 
+QFrame *
+Preferences::mkLine()
+{
+	QFrame *line = new QFrame(this);
+	line->setFrameShape(QFrame::HLine);
+	line->setFrameShadow(QFrame::Sunken);
+
+	return (line);
+}
+
 void
 Preferences::acceptSlot()
 {
@@ -135,8 +149,11 @@ Preferences::acceptSlot()
 	dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer = shutdownSb->value();
 	dsbcfg_getval(cfg, CFG_SUSPEND).boolean =
 	    suspendRb->isChecked() ? true : false;
+	dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer = pollIvalSb->value();
+
 	dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean =
 		useIconThemeCb->checkState() == Qt::Checked ? true : false;
+
 	if (strcmp(dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string,
 	    suspendArr.data()) != 0) {
 		free(dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string);
