@@ -46,7 +46,7 @@ Countdown::Countdown(bool suspend, int seconds, QWidget *parent)
 	QPushButton *cancel = new QPushButton(cnclIcon, tr("&Cancel"));
 
 	setLabelText(seconds);
-	icon->setPixmap(pic.pixmap(pic.actualSize(QSize(72, 72))));
+	icon->setPixmap(pic.pixmap(pic.actualSize(QSize(64, 64))));
 	setWindowIcon(tIcon);
 	setWindowTitle(tr("Critical battery capacity reached"));
 
