@@ -25,6 +25,7 @@
 #include <QTimer>
 #include <QSystemTrayIcon>
 #include <QPainter>
+#include <QPointer>
 #include <unistd.h>
 #include "countdown.h"
 #include "preferences.h"
@@ -34,36 +35,38 @@
 BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	QWidget(parent) {
 	trayTimer = new QTimer(this);
-	QTimer *pollTimer = new QTimer(this);
+	pollTimer = new QTimer(this);
 
 	this->cfg = cfg; acpi_prev.cap = 0;
 	shutdown = shutdownCanceled = false;
 
 	if (init_acpi(&acpi) == -1)
 		qh_err(0, EXIT_FAILURE, "init_acpi()");
+	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
 	useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
+
 	loadIcons();
 	updateSettings();
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
 	connect(trayTimer, SIGNAL(timeout()), this, SLOT(checkForSysTray()));
         trayTimer->start(500);
-	pollTimer->start(5000);
+	pollTimer->start(pollInterval * 1000);
 }
 
 void BattIndicator::updateSettings()
 {
+	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
 	capShutdown  = dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer;
 	autoShutdown = dsbcfg_getval(cfg, CFG_AUTOSHUTDOWN).boolean;
 
 	if (useIconTheme != dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean) {
 		useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
 		loadIcons();
-		/* Force updating the tray icon */
-		lastCap = acpi.cap + 1;
 		updateIcon();
 	}
 	if (acpi.cap > capShutdown)
 		shutdownCanceled = false;
+	pollTimer->start(pollInterval * 1000);
 }
 
 QIcon BattIndicator::createIcon(int status)
@@ -141,9 +144,6 @@ void BattIndicator::updateIcon()
 	int i;
 
 	if (missingIcon || !useIconTheme) {
-		if (acpi.cap == lastCap)
-			return;
-		lastCap = acpi.cap;
 		int status = acpi.cap *
 		    (acpi.status == ACPI_STATUS_DISCHARGING ? -1 : 1);
 		trayIcon->setIcon(createIcon(status));
@@ -234,19 +234,18 @@ QMenu *BattIndicator::createTrayMenu()
 
 void BattIndicator::showConfigMenu()
 {
-	Preferences prefs(cfg);
-
-	if (prefs.exec() == (int)QDialog::Accepted)
+	QPointer<Preferences> prefs = new Preferences(cfg);
+	if (prefs->exec() == (int)QDialog::Accepted)
 		updateSettings();
+	delete prefs;
 }
 
 void BattIndicator::showShutdownWin()
 {
 	int ret;
 	bool doSuspend = dsbcfg_getval(cfg, CFG_SUSPEND).boolean;
-
-	Countdown countdownWin(doSuspend, 30, this);
-	if (countdownWin.exec() == QDialog::Rejected) {
+	QPointer<Countdown> countdownWin = new Countdown(doSuspend, 30, this);
+	if (countdownWin->exec() == QDialog::Rejected) {
 		shutdown = false;
 		shutdownCanceled = true;
 	} else {
@@ -275,6 +274,7 @@ void BattIndicator::showShutdownWin()
 			}
 		}
 	}
+	delete countdownWin;
 }
 
 void BattIndicator::showWarnMsg()
