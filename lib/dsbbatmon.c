@@ -304,6 +304,9 @@ poll_acpi(dsbbatmon_t *bm)
 		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "ioctl(ACPIIO_ACAD_GET_STATUS)");
 	}
+	if ((battio.battinfo.state & ACPI_BATT_STAT_INVALID) ||
+	    battio.battinfo.cap < 0)
+		return (0);
 	bm->acpi.cap = battio.battinfo.cap;
 	bm->acpi.min = battio.battinfo.min;
 
