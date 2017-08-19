@@ -34,47 +34,64 @@
 
 BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	QWidget(parent) {
+	bm        = new dsbbatmon_t;
 	trayTimer = new QTimer(this);
 	pollTimer = new QTimer(this);
+	this->cfg = cfg;
 
-	this->cfg = cfg; acpi_prev.cap = 0;
-	shutdown = shutdownCanceled = false;
+	loadIcons(); updateSettings();
 
-	if (init_acpi(&acpi) == -1)
-		qh_err(0, EXIT_FAILURE, "init_acpi()");
-	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
-	useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
+	if (dsbbatmon_init(bm) == -1) {
+		qh_err(0, EXIT_FAILURE, "dsbbatmon_init(): %s",
+		    dsbbatmon_strerror(bm));
+	}
+	initSocketNotifier(bm->socket);
 
-	loadIcons();
-	updateSettings();
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
 	connect(trayTimer, SIGNAL(timeout()), this, SLOT(checkForSysTray()));
-        trayTimer->start(500);
-	pollTimer->start(pollInterval * 1000);
+
+	if (dsbbatmon_battery_present(bm)) {
+		pollTimer->start(pollInterval * 1000);
+		trayTimer->start(500);
+	} else {
+		qDebug("Battery not present. Waiting ...");
+	}
+}
+
+void BattIndicator::initSocketNotifier(int socket)
+{
+	swatcher = new QSocketNotifier(socket, QSocketNotifier::Read, this);
+
+	connect(swatcher, SIGNAL(activated(int)), this,
+	    SLOT(catchActivated(int)));
 }
 
 void BattIndicator::updateSettings()
 {
-	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
+	doSuspend    = dsbcfg_getval(cfg, CFG_SUSPEND).boolean;
 	capShutdown  = dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer;
+	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
 	autoShutdown = dsbcfg_getval(cfg, CFG_AUTOSHUTDOWN).boolean;
 
+	if (doSuspend)
+		command = dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string;
+	else
+		command = dsbcfg_getval(cfg, CFG_SHUTDOWN_CMD).string;
 	if (useIconTheme != dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean) {
 		useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
-		loadIcons();
-		updateIcon();
+		loadIcons(); updateIcon();
 	}
-	if (acpi.cap > capShutdown)
+	if (bm->acpi.cap > capShutdown)
 		shutdownCanceled = false;
 	pollTimer->start(pollInterval * 1000);
 }
 
 QIcon BattIndicator::createIcon(int status)
 {
-	QColor charge(96, 255, 96);
-	QColor discharge(239, 239, 92);
-	QColor critical(255, 0, 0);
-	QColor color;
+	QColor  color;
+	QColor  charge(CHARGE_COLOR);
+	QColor  discharge(DISCHARGE_COLOR);
+	QColor  critical(CRITICAL_COLOR);
 	QPixmap pix(10, 24);
 
 	pix.fill(QColor(0, 0, 0, 0));
@@ -102,25 +119,30 @@ void BattIndicator::loadIcons()
 {
 	missingIcon = false;
 
-	dBattIcon[4] = qh_loadIcon("battery-full-symbolic", "battery", NULL);
-	dBattIcon[3] = qh_loadIcon("battery-good-symbolic", "battery", NULL);
-	dBattIcon[2] = qh_loadIcon("battery-low-symbolic", "battery-low",
-	    NULL);
+	dBattIcon[4] = qh_loadIcon("battery-full-symbolic",
+				   "battery", NULL);
+	dBattIcon[3] = qh_loadIcon("battery-good-symbolic",
+				   "battery", NULL);
+	dBattIcon[2] = qh_loadIcon("battery-low-symbolic",
+				   "battery-low", NULL);
 	dBattIcon[1] = qh_loadIcon("battery-caution-symbolic",
-	    "battery-caution", NULL);
-	dBattIcon[0] = qh_loadIcon("battery-empty-symbolic", "battery-low",
-	    NULL);
-	cBattIcon[4] = qh_loadIcon("battery-full-charging-symbolic", "battery",
-	    NULL);
-	cBattIcon[3] = qh_loadIcon("battery-good-charging-symbolic", "battery",
-	    NULL);
+			           "battery-caution", NULL);
+	dBattIcon[0] = qh_loadIcon("battery-empty-symbolic",
+				   "battery-low", NULL);
+	cBattIcon[4] = qh_loadIcon("battery-full-charging-symbolic",
+				   "battery", NULL);
+	cBattIcon[3] = qh_loadIcon("battery-good-charging-symbolic",
+				   "battery", NULL);
 	cBattIcon[2] = qh_loadIcon("battery-low-charging-symbolic",
-	    "battery-low", NULL);
+				   "battery-low", NULL);
 	cBattIcon[1] = qh_loadIcon("battery-caution-charging-symbolic",
-	    "battery-caution", NULL);
+				   "battery-caution", NULL);
 	cBattIcon[0] = qh_loadIcon("battery-empty-charging-symbolic",
-	    "battery-low", NULL);
-	acIcon = qh_loadIcon("battery-full-charged-symbolic", "battery", NULL);
+				   "battery-low", NULL);
+	acIcon	     = qh_loadIcon("battery-full-charged-symbolic",
+				   "battery", NULL);
+	quitIcon     = qh_loadIcon("application-exit", NULL);
+	prefsIcon    = qh_loadIcon("preferences-system", NULL);
 
 	for (int i = 0; i < 5 && !missingIcon; i++) {
 		if (dBattIcon[i].isNull())
@@ -128,6 +150,10 @@ void BattIndicator::loadIcons()
 		if (cBattIcon[i].isNull())
 			missingIcon = true;
 	}
+	if (quitIcon.isNull())
+		quitIcon = qh_loadStockIcon(QStyle::SP_DialogCloseButton);
+	if (prefsIcon.isNull())
+		prefsIcon = qh_loadStockIcon(QStyle::SP_FileIcon);
 }
 
 void BattIndicator::trayClicked(QSystemTrayIcon::ActivationReason reason)
@@ -139,29 +165,77 @@ void BattIndicator::trayClicked(QSystemTrayIcon::ActivationReason reason)
 	}
 }
 
+void BattIndicator::catchActivated(int /*socket*/)
+{
+	switch (dsbbatmon_check_for_batt_event(bm)) {
+	case  0:
+		if (!dsbbatmon_devd_connection_replaced(bm))
+			return;
+		delete swatcher;
+		initSocketNotifier(bm->socket);
+		return;
+	case -1:
+		qh_errx(0, EXIT_FAILURE, "%s", dsbbatmon_strerror(bm));
+	}
+	update();
+}
+
+void BattIndicator::update()
+{
+	if (dsbbatmon_check_battery_presence(bm) == -1)
+		qh_errx(0, EXIT_FAILURE, "dsbbatmon_check_battery_presence()");
+	if (dsbbatmon_battery_present(bm)) {
+		if (dsbbatmon_poll(bm) == -1)
+			qh_err(0, EXIT_FAILURE, "%s", dsbbatmon_strerror(bm));
+		showTrayIcon();
+		pollTimer->start(pollInterval * 1000);
+	} else {
+		hideTrayIcon();
+		pollTimer->stop();
+	}
+}
+
+void BattIndicator::showTrayIcon()
+{
+	if (trayIcon == 0)
+		createTrayIcon();
+	else
+		trayIcon->show();
+	updateIcon(); updateToolTip();
+}
+
+void BattIndicator::hideTrayIcon()
+{
+	if (trayIcon != 0)
+		trayIcon->hide();
+}
+
 void BattIndicator::updateIcon()
 {
 	int i;
 
+	if (trayIcon == 0)
+		return;
 	if (missingIcon || !useIconTheme) {
-		int status = acpi.cap *
-		    (acpi.status == ACPI_STATUS_DISCHARGING ? -1 : 1);
+		int status = bm->acpi.cap *
+		    (bm->acpi.status == ACPI_STATUS_DISCHARGING ? -1 : 1);
 		trayIcon->setIcon(createIcon(status));
 		return;
 	}
-	if (acpi.cap >= 90)
+	if (bm->acpi.cap >= 90)
 		i = 4;
-	else if (acpi.cap < 5)
+	else if (bm->acpi.cap < 5)
 		i = 0;
-	else if (acpi.cap < 20)
+	else if (bm->acpi.cap < 20)
 		i = 1;
-	else if (acpi.cap < 40)
+	else if (bm->acpi.cap < 40)
 		i = 2;
 	else
 		i = 3;
-	if (acpi.status == ACPI_STATUS_DISCHARGING)
+	if (bm->acpi.status == ACPI_STATUS_DISCHARGING) {
 		trayIcon->setIcon(dBattIcon[i]);
-	else if (acpi.status == ACPI_STATUS_CHARGING)
+	}
+	else if (bm->acpi.status == ACPI_STATUS_CHARGING)
 		trayIcon->setIcon(cBattIcon[i]);
 	else
 		trayIcon->setIcon(acIcon);
@@ -171,19 +245,21 @@ void BattIndicator::updateToolTip()
 {
 	QString tt;
 
-	if (acpi.status == ACPI_STATUS_CHARGING)
+	if (trayIcon == 0)
+		return;
+	if (bm->acpi.status == ACPI_STATUS_CHARGING)
 		tt = QString(tr("Status: Charging\nCapacity: %1%"));
-	else if (acpi.status == ACPI_STATUS_DISCHARGING)
+	else if (bm->acpi.status == ACPI_STATUS_DISCHARGING)
 		tt = QString(tr("Status: Discharging\nCapacity: %1%"));
-	else if (acpi.status == ACPI_STATUS_ACLINE)
+	else if (bm->acpi.status == ACPI_STATUS_ACLINE)
 		tt = QString(tr("Status: Running on AC power"));
 	else
 		return;
-	if (acpi.status != ACPI_STATUS_ACLINE)
-		tt = tt.arg(acpi.cap);
-	if (acpi.min != -1 && acpi.status != ACPI_STATUS_ACLINE) {
-		int hrs = acpi.min / 60;
-		int min = acpi.min % 60;
+	if (bm->acpi.status != ACPI_STATUS_ACLINE)
+		tt = tt.arg(bm->acpi.cap);
+	if (bm->acpi.min != -1 && bm->acpi.status != ACPI_STATUS_ACLINE) {
+		int hrs = bm->acpi.min / 60;
+		int min = bm->acpi.min % 60;
 		tt = tt.append(tr("\nTime remaining: %1:%2")).arg(hrs).arg(min);
 	}		
 	trayIcon->setToolTip(tt);
@@ -191,36 +267,39 @@ void BattIndicator::updateToolTip()
 
 void BattIndicator::pollACPI()
 {
-	(void)poll_acpi(&acpi);
-
-	if (acpi.cap != acpi_prev.cap || acpi.min != acpi_prev.min ||
-	    acpi.status != acpi_prev.status) {
+	
+	if (!dsbbatmon_battery_present(bm))
+		return;
+	if (dsbbatmon_poll(bm) == -1) {
+		qh_errx(0, EXIT_FAILURE, "dsbbatmon_poll(): %s",
+		    dsbbatmon_strerror(bm));
+	}
+	if (bm->acpi.cap != acpi_prev.cap || bm->acpi.min != acpi_prev.min ||
+	    bm->acpi.status != acpi_prev.status) {
 		updateIcon(); updateToolTip();
-		if (acpi.status != ACPI_STATUS_DISCHARGING) {
+		if (bm->acpi.status != ACPI_STATUS_DISCHARGING) {
 			shutdown = shutdownCanceled = false;
 		} else if (!shutdownCanceled && autoShutdown &&
-		    acpi.cap <= capShutdown) {
-			shutdown = true;
-			showShutdownWin();
-		} else if (acpi_prev.cap <= 0 && acpi.cap < 40) {
+		    bm->acpi.cap <= capShutdown && !shutdown) {
+			if (!shutdownWinVisible) {
+				shutdown = true;
+				showShutdownWin();
+			}
+		} else if (acpi_prev.cap <= 0 && bm->acpi.cap < 40) {
 			showWarnMsg();
-		} else if ((acpi_prev.cap >= 40 && acpi.cap < 40) ||
-		    (acpi_prev.cap >= 20 && acpi.cap < 20) ||
-		    (acpi_prev.cap >= 5 && acpi.cap < 5)) {
+		} else if ((acpi_prev.cap >= 40 && bm->acpi.cap < 40) ||
+		    (acpi_prev.cap >= 20 && bm->acpi.cap < 20) ||
+		    (acpi_prev.cap >= 5 && bm->acpi.cap < 5)) {
 			showWarnMsg();
 		}
-		acpi_prev = acpi;
+		acpi_prev = bm->acpi;
 	}
 }
 
 QMenu *BattIndicator::createTrayMenu()
 {
-	QIcon quitIcon  = qh_loadIcon("application-exit", NULL);
-	QIcon prefsIcon = qh_loadIcon("preferences-system", NULL);
-	if (quitIcon.isNull())
-		quitIcon = qh_loadStockIcon(QStyle::SP_DialogCloseButton);
-	QMenu   *menu = new QMenu(this);
-	QAction *quitAction = new QAction(quitIcon, tr("&Quit"), this);
+	QMenu *menu		   = new QMenu(this);
+	QAction *quitAction	   = new QAction(quitIcon, tr("&Quit"), this);
         QAction *preferencesAction = new QAction(prefsIcon,
 	    tr("&Preferences"), this);
 
@@ -242,29 +321,25 @@ void BattIndicator::showConfigMenu()
 
 void BattIndicator::showShutdownWin()
 {
-	int ret;
-	bool doSuspend = dsbcfg_getval(cfg, CFG_SUSPEND).boolean;
+	int  ret;
 	QPointer<Countdown> countdownWin = new Countdown(doSuspend, 30, this);
-	if (countdownWin->exec() == QDialog::Rejected) {
-		shutdown = false;
-		shutdownCanceled = true;
-	} else {
-		const char *cmd = doSuspend ? \
-		    dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string : \
-		    dsbcfg_getval(cfg, CFG_SHUTDOWN_CMD).string;
 
+	shutdownWinVisible = true;
+	if (countdownWin->exec() == QDialog::Rejected)
+		shutdownCanceled = true;
+	else {
 		dsbcfg_write(PROGRAM, "config", cfg);
 		if (!doSuspend) {
 			/* Shutdown. Never return. */
-			(void)execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-			qh_err(0, EXIT_FAILURE, "Couldn't execute %", cmd);
+			(void)execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+			qh_err(0, EXIT_FAILURE, "Couldn't execute %", command);
 		} else {
 			/* Suspend. Do not not exit */
-			switch ((ret = system(cmd))) {
+			switch ((ret = system(command))) {
 			case   0:
 				break;
 			case  -1:
-				qh_err(0, EXIT_FAILURE, "system(%s)", cmd);
+				qh_err(0, EXIT_FAILURE, "system(%s)", command);
 			case 127:
 				qh_err(0, EXIT_FAILURE, "Failes to execute " \
 				    "shell.");
@@ -275,13 +350,14 @@ void BattIndicator::showShutdownWin()
 		}
 	}
 	delete countdownWin;
+	shutdown = shutdownWinVisible = false;
 }
 
 void BattIndicator::showWarnMsg()
 {
-	QString msg = QString(tr("Battery capacity at %1%")).arg(acpi.cap);
+	QString msg = QString(tr("Battery capacity at %1%")).arg(bm->acpi.cap);
 	trayIcon->showMessage(QString(tr("Warning")), msg,
-	    acpi.cap <= 5 ? QSystemTrayIcon::Critical : \
+	    bm->acpi.cap <= 5 ? QSystemTrayIcon::Critical : \
 	    QSystemTrayIcon::Warning, 20000);
 }
 
@@ -303,8 +379,7 @@ void BattIndicator::createTrayIcon()
 	trayIcon    = new QSystemTrayIcon(this);
 	QMenu *menu = createTrayMenu();
 
-	updateIcon();
-	updateToolTip();
+	updateIcon(); updateToolTip();
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
 	connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
