@@ -35,14 +35,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/param.h>
-#include <sys/linker.h>
-#include <sys/pciio.h>
 
 #include "dsbbatmon.h"
-
-#define DEVD_SUBS_ACAD	     1
-#define DEVD_SUBS_CMBAT	     2
 
 #define SOCK_ERR_IO_ERROR    2
 #define SOCK_ERR_CONN_CLOSED 1
@@ -56,20 +50,41 @@
 
 static int   devd_connect(void);
 static int   uconnect(const char *path);
+static int   get_units(dsbbatmon_t *bm);
 static int   poll_acpi(dsbbatmon_t *bm);
-static int   init_acpi(dsbbatmon_t *bm);
-static bool  parse_devd_event(char *str);
+static bool  is_batt_event(char *str);
+static void  set_error(dsbbatmon_t *, int, bool, const char *, ...);
 static char *read_devd_event(dsbbatmon_t *bm, int *error);
 
 int
-dsbbatmon_update(dsbbatmon_t *bm)
+dsbbatmon_check_battery_presence(dsbbatmon_t *bm)
 {
-	if (poll_acpi(bm) == -1) {
-		if (get_units(bm) == -1)
-			ERROR(bm, -1, 0, true, "get_units()");
-		return (0);
+	return (get_units(bm));
+}
+
+bool
+dsbbatmon_battery_present(dsbbatmon_t *bm)
+{
+	return (bm->units > 0 ? true : false);
+}
+
+bool
+dsbbatmon_devd_connection_replaced(dsbbatmon_t *bm)
+{
+	if (bm->conn_replaced) {
+		bm->conn_replaced = false;
+		return (true);
 	}
-	if (bm->units < 1) {
+	return (false);
+}
+
+int
+dsbbatmon_poll(dsbbatmon_t *bm)
+{
+	if (bm->units < 1)
+		return (0);
+	if (poll_acpi(bm) == -1) {
+		/* Battery removed? */
 		if (get_units(bm) == -1)
 			ERROR(bm, -1, 0, true, "get_units()");
 	}
@@ -80,13 +95,17 @@ int
 dsbbatmon_init(dsbbatmon_t *bm)
 {
 	bm->lnbuf = NULL;
-	bm->rd = bm->slen = bm->bufsz = 0;
+	bm->errmsg[0] = '\0';
+	bm->conn_replaced = false;
+	bm->rd = bm->slen = bm->bufsz = bm->units = 0;
 
-	if (init_acpi(bm) == -1)
-		return (-1);
 	if ((bm->socket = devd_connect()) == -1) 
 		ERROR(bm, -1, 0, true, "devd_connect()");
-	return (0);
+#ifndef TEST
+	if ((bm->acpi.acpifd = open(ACPIDEV, O_RDONLY)) == -1)
+		ERROR(bm, -1, FATAL_SYSERR, false, "open(%s)", ACPIDEV);
+#endif
+	return (dsbbatmon_poll(bm));
 }
 
 int
@@ -100,13 +119,13 @@ dsbbatmon_check_for_batt_event(dsbbatmon_t *bm)
 			return (1);
 	}
 	if (error == SOCK_ERR_CONN_CLOSED) {
-		/* Lost connection to devd. */
 		(void)close(bm->socket);
 		warnx("Lost connection to devd. Reconnecting ...");
 		if ((bm->socket = devd_connect()) == -1) {
 			ERROR(bm, -1, 0, false,
 			    "Connecting to devd failed. Giving up.");
 		}
+		bm->conn_replaced = true;
 	} else if (error == SOCK_ERR_IO_ERROR)
 		ERROR(bm, -1, FATAL_SYSERR, false, "read_devd_event()");
 	return (0);
@@ -171,7 +190,7 @@ get_units(dsbbatmon_t *bm)
 	FILE *fp;
 
 	if ((fp = fopen(PATH_TEST_UNIT_FILE, "r")) == NULL) {
-		err("fopen(%s)", PATH_TEST_UNIT_FILE);
+		err(EXIT_FAILURE, "fopen(%s)", PATH_TEST_UNIT_FILE);
 	}
 	if ((c = fgetc(fp)) == EOF) {
 		if (ferror(fp))
@@ -195,7 +214,7 @@ get_units(dsbbatmon_t *bm)
 	if (sysctlbyname("hw.acpi.battery.units", &units, &sz, NULL, 0) != 0) {
 		if (errno == ENOENT)
 			return (0);
-		ERROR(bm, -1, FATAL_SYSERR,
+		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "sysctlbyname(hw.acpi.battery.units)");
 	}
 	bm->units = units;
@@ -203,45 +222,6 @@ get_units(dsbbatmon_t *bm)
 	return (units);
 }
 #endif	/* TEST */
-
-int
-dsbbatmon_wait_for_batt_event()
-{
-	int     error;
-	char   *ln;
-	fd_set  rset;
-
-	for (;;) {
-		FD_ZERO(&rset); FD_SET(bm->socket, &rset);
-		while (select(bm->socket + 1, &rset, NULL, NULL, NULL) == -1) {
-			if (errno == EINTR)
-				continue;
-			else
-				ERROR(bm, -1, FATAL_SYSERR, false, "select()");
-		}
-		if (!FD_ISSET(bm->socket, &rset))
-			continue;
-		while ((ln = read_devd_event(bm, &error)) != NULL) {
-			if (!is_batt_event(ln))
-				continue;
-			return (poll_acpi(bm));
-		}
-		if (error == SOCK_ERR_CONN_CLOSED) {
-			/* Lost connection to devd. */
-			(void)close(bm->socket);
-			warnx("Lost connection to devd. Reconnecting ...");
-			if ((bm->socket = devd_connect()) == -1) {
-				ERROR(bm, -1, 0, false,
-				    "Connecting to devd failed. Giving up.");
-			}
-		} else if (error == SOCK_ERR_IO_ERROR) {
-			ERROR(bm, -1, FATAL_SYSERR, false,
-			    "read_devd_event()");
-		}
-	}
-	/* NOTREACHED */
-	return (-1);
-}
 
 #ifdef TEST
 char *
@@ -265,25 +245,17 @@ read_cmd()
 #endif
 
 static int
-init_acpi(dsbbatmon_t *bm)
-{
-#ifdef TEST
-	return (poll_acpi(bm));
-#endif
-	if ((bm->acpi.acpifd = open(ACPIDEV, O_RDONLY)) == -1)
-		ERROR(bm, -1, FATAL_SYSERR, false, "open(%s)", ACPIDEV);
-	return (dsbbatmon_update(bm));
-}
-
-static int
 poll_acpi(dsbbatmon_t *bm)
 {
 	int	     ac;
 	static union acpi_battery_ioctl_arg battio;
 #ifdef TEST
-	static time_t t0 = 0;
-	char *p;
-	int d = rand() % 5;
+	int	       d;
+	char	      *p;
+	static time_t  t0 = 0;
+
+	d = rand() % 5;
+	get_units(bm);
 	if (bm->units < 1)
 		return (-1);
 	if (t0 == 0) {
