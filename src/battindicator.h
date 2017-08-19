@@ -27,9 +27,14 @@
 #include <QIcon>
 #include <QMenu>
 #include <QSystemTrayIcon>
+#include <QSocketNotifier>
 #include <time.h>
-#include "lib/acpi.h"
+#include "lib/dsbbatmon.h"
 #include "lib/config.h"
+
+#define CHARGE_COLOR	 96, 255, 96
+#define CRITICAL_COLOR	255,   0,  0
+#define DISCHARGE_COLOR 239, 239, 92
 
 class BattIndicator : public QWidget
 {
@@ -37,37 +42,48 @@ class BattIndicator : public QWidget
 public:
 	BattIndicator(dsbcfg_t *cfg, QWidget *parent = 0);
 private slots:
-	void quit();
-	void pollACPI();
-	void showConfigMenu();
-	void trayClicked(QSystemTrayIcon::ActivationReason reason);
-	void checkForSysTray();
+	void   quit();
+	void   pollACPI();
+	void   showConfigMenu();
+	void   trayClicked(QSystemTrayIcon::ActivationReason reason);
+	void   checkForSysTray();
+	void   catchActivated(int socket);
 private:
-	void showShutdownWin();
-	void updateToolTip();
-	void updateIcon();
-	void showWarnMsg();
-	void updateSettings();
-	void loadIcons();
-	void createTrayIcon();
-	QIcon createIcon(int status);
+	void   update();
+	void   showTrayIcon();
+	void   hideTrayIcon();
+	void   showShutdownWin();
+	void   updateToolTip();
+	void   updateIcon();
+	void   showWarnMsg();
+	void   updateSettings();
+	void   loadIcons();
+	void   createTrayIcon();
+	void   initSocketNotifier(int socket);
+	QIcon  createIcon(int status);
 	QMenu *createTrayMenu();
-
-	int  capShutdown;
-	int  pollInterval = 5;
-	bool missingIcon = false;
-	bool shutdown;
-	bool useIconTheme;
-	bool autoShutdown;
-	bool shutdownCanceled;
-	QIcon cBattIcon[5];
-	QIcon dBattIcon[5];
-	QIcon acIcon;
-	acpi_t acpi;
+private:
+	int    capShutdown;
+	int    pollInterval = 5;
+	char  *command;
+	bool   shutdown     = false;
+	bool   missingIcon  = false;
+	bool   doSuspend;
+	bool   useIconTheme;
+	bool   autoShutdown;
+	bool   shutdownCanceled   = false;
+	bool   shutdownWinVisible = false;
+	QIcon  cBattIcon[5];
+	QIcon  dBattIcon[5];
+	QIcon  acIcon;
+	QIcon  prefsIcon;
+	QIcon  quitIcon;
 	acpi_t acpi_prev;
-	dsbcfg_t *cfg;
-	QTimer *trayTimer;
-	QTimer *pollTimer;
-	QSystemTrayIcon *trayIcon;
+	QTimer		*trayTimer;
+	QTimer		*pollTimer;
+	dsbcfg_t	*cfg;
+	dsbbatmon_t	*bm;
+	QSocketNotifier *swatcher = 0; 
+	QSystemTrayIcon	*trayIcon = 0;
 };
 
