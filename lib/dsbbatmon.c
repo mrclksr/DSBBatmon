@@ -98,7 +98,7 @@ dsbbatmon_init(dsbbatmon_t *bm)
 	bm->lnbuf = NULL;
 	bm->errmsg[0] = '\0';
 	bm->conn_replaced = false;
-	bm->rd = bm->slen = bm->bufsz = bm->units = 0;
+	bm->rd = bm->slen = bm->bufsz = 0; bm->units = 1;
 
 	if ((bm->socket = devd_connect()) == -1) 
 		ERROR(bm, -1, 0, true, "devd_connect()");
