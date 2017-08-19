@@ -22,7 +22,7 @@ QMAKE_EXTRA_TARGETS += distclean cleanqm
 HEADERS += src/battindicator.h \
            src/preferences.h \
 	   src/countdown.h \
-           lib/acpi.h \
+           lib/dsbbatmon.h \
            lib/config.h \
            lib/dsbcfg/dsbcfg.h \
            lib/qt-helper/qt-helper.h
@@ -30,7 +30,7 @@ SOURCES += src/battindicator.cpp \
 	   src/countdown.cpp \
            src/main.cpp \
            src/preferences.cpp \
-           lib/acpi.c \
+           lib/dsbbatmon.c \
            lib/config.c \
            lib/dsbcfg/dsbcfg.c \
            lib/qt-helper/qt-helper.cpp
