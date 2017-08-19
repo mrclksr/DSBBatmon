@@ -1,0 +1,57 @@
+#!/usr/local/bin/perl
+#
+# Generate randomly changing battery states (c = charge, d = discharge), and
+# send valid and invalid devd ACPI events.
+#
+#
+# qmake TEST=1 && make
+# perl test.pl | ./dsbbatmon
+#
+
+use strict;
+use IO::Handle;
+
+my $spath = '/tmp/dsbbatmon-test.socket';
+my $upath = '/tmp/dsbbatmon-test.units';
+
+my @ev = ('!system=ACPI subsystem=ACAD', '!system=ACPI subsystem=CMBAT',
+	  '!system=FOO', 'system=ACPI', '!system=ACPI	subsystem=FOO');
+my @st = ('c', 'd');
+my $fh;
+
+sub _rand {
+	my $x = `dd if=/dev/random bs=1 count=4`;
+	return unpack("B*", $x);
+}
+
+sub set_units {
+	my $f;
+	open($f, '+>', $upath) || die "$!\n";
+	print $f $_[0];
+	close($f);
+}
+
+set_units(int(rand(2)));
+
+system("rm -f $spath");
+open($fh, "| nc -l -U $spath") || die "$!\n";
+for (;;) {
+	my $m = int(rand(1000));
+	my $n = int(rand(100));
+	my $k = int(rand(2));
+	my $j = int(rand(10));
+	my $i = int(rand(@ev));
+
+	if ($m % 25 == 0) {
+		set_units(int(rand(2)));
+	}
+	if ($n % 7 == 0) {
+		print "$st[$k]\n";
+		STDOUT->flush();
+		$fh->flush();
+	} 
+	sleep($j);
+	print $fh "$ev[$i]\n";
+	$fh->flush();
+}
+
