@@ -6,6 +6,10 @@ isEmpty(DATADIR) {
 	DATADIR=$${PREFIX}/share/$${PROGRAM}                                    
 }                   
 
+!isEmpty(TEST) {
+	DEFINES += TEST=1
+}
+
 PROGRAM	     = dsbbatmon
 TARGET	     = $${PROGRAM}
 APPSDIR	     = $${PREFIX}/share/applications
