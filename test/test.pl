@@ -13,7 +13,7 @@ use strict;
 use IO::Handle;
 
 my $spath = '/tmp/dsbbatmon-test.socket';
-my $upath = '/tmp/dsbbatmon-test.units';
+my $upath = '/tmp/dsbbatmon-test.presence';
 
 my @ev = ('!system=ACPI subsystem=ACAD', '!system=ACPI subsystem=CMBAT',
 	  '!system=FOO', 'system=ACPI', '!system=ACPI	subsystem=FOO');
@@ -30,14 +30,14 @@ sub _rand {
 	return $x;
 }
 
-sub set_units {
+sub set_presence {
 	my $f;
 	open($f, '+>', $upath) || die "$!\n";
 	print $f $_[0];
 	close($f);
 }
 
-set_units(_rand() % 2);
+set_presence(_rand() % 2);
 
 system("rm -f $spath");
 open($fh, "| nc -l -U $spath") || die "$!\n";
@@ -49,7 +49,7 @@ for (;;) {
 	my $i = _rand() % @ev;
 
 	if ($m % 25 == 0) {
-		set_units(int(rand(2)));
+		set_presence(int(_rand() % 2));
 	}
 	if ($n % 7 == 0) {
 		print "$st[$k]\n";
