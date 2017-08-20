@@ -262,7 +262,9 @@ void BattIndicator::updateToolTip()
 	if (bm->acpi.min != -1 && bm->acpi.status != ACPI_STATUS_ACLINE) {
 		int hrs = bm->acpi.min / 60;
 		int min = bm->acpi.min % 60;
-		tt = tt.append(tr("\nTime remaining: %1:%2")).arg(hrs).arg(min);
+		tt = tt.append(tr("\nTime remaining: %1:%2"));
+		tt = tt.arg(hrs, 2, 10, QChar('0'));
+		tt = tt.arg(min, 2, 10, QChar('0'));
 	}		
 	trayIcon->setToolTip(tt);
 }
