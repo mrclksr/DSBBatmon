@@ -26,6 +26,7 @@
 #include <QSystemTrayIcon>
 #include <QPainter>
 #include <QPointer>
+#include <err.h>
 #include <unistd.h>
 #include "countdown.h"
 #include "preferences.h"
@@ -40,8 +41,11 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	this->cfg = cfg;
 
 	loadIcons(); updateSettings();
-
-	if (dsbbatmon_init(bm) == -1) {
+	switch (dsbbatmon_init(bm)) {
+	case  0:
+		/* There is no battery slot. */
+		errx(EXIT_FAILURE, "No battery slot installed.");
+	case -1:
 		qh_err(0, EXIT_FAILURE, "dsbbatmon_init(): %s",
 		    dsbbatmon_strerror(bm));
 	}
@@ -103,10 +107,10 @@ QIcon BattIndicator::createIcon(int status)
 		color = discharge;
 	else
 		color = charge;
-	p.setPen(color);
 	int x = (21 * status / 100);
 	if (x < 0)
 		x *= -1;
+	p.setPen(color);
 	p.drawRect(4, 0, 2, 1);
 	p.drawRect(0, 1, 9, 22);
 	p.fillRect(QRectF(1, 22 - x, 8, x + 1), color);
@@ -182,11 +186,9 @@ void BattIndicator::catchActivated(int /*socket*/)
 
 void BattIndicator::update()
 {
-	if (dsbbatmon_check_battery_presence(bm) == -1)
-		qh_errx(0, EXIT_FAILURE, "dsbbatmon_check_battery_presence()");
+	if (dsbbatmon_poll(bm) == -1)
+		qh_err(0, EXIT_FAILURE, "%s", dsbbatmon_strerror(bm));
 	if (dsbbatmon_battery_present(bm)) {
-		if (dsbbatmon_poll(bm) == -1)
-			qh_err(0, EXIT_FAILURE, "%s", dsbbatmon_strerror(bm));
 		showTrayIcon();
 		pollTimer->start(pollInterval * 1000);
 	} else {
