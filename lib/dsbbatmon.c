@@ -57,16 +57,10 @@ static bool  is_batt_event(char *str);
 static void  set_error(dsbbatmon_t *, int, bool, const char *, ...);
 static char *read_devd_event(dsbbatmon_t *bm, int *error);
 
-int
-dsbbatmon_check_battery_presence(dsbbatmon_t *bm)
-{
-	return (get_units(bm));
-}
-
 bool
 dsbbatmon_battery_present(dsbbatmon_t *bm)
 {
-	return (bm->units > 0 ? true : false);
+	return (bm->have_batt);
 }
 
 bool
@@ -82,31 +76,42 @@ dsbbatmon_devd_connection_replaced(dsbbatmon_t *bm)
 int
 dsbbatmon_poll(dsbbatmon_t *bm)
 {
-	if (bm->units < 1)
-		return (0);
-	if (poll_acpi(bm) == -1) {
-		/* Battery removed? */
-		if (get_units(bm) == -1)
-			ERROR(bm, -1, 0, true, "get_units()");
-	}
+	if (poll_acpi(bm) == -1)
+		ERROR(bm, -1, 0, true, "poll_acpi()");
 	return (0);
 }
 
 int
 dsbbatmon_init(dsbbatmon_t *bm)
 {
+#ifndef TEST
+	int units;
+#endif
 	bm->lnbuf = NULL;
 	bm->errmsg[0] = '\0';
 	bm->conn_replaced = false;
-	bm->rd = bm->slen = bm->bufsz = 0; bm->units = 1;
+	bm->rd = bm->slen = bm->bufsz = 0;
 
 	if ((bm->socket = devd_connect()) == -1) 
 		ERROR(bm, -1, 0, true, "devd_connect()");
 #ifndef TEST
 	if ((bm->acpi.acpifd = open(ACPIDEV, O_RDONLY)) == -1)
 		ERROR(bm, -1, FATAL_SYSERR, false, "open(%s)", ACPIDEV);
-#endif
-	return (dsbbatmon_poll(bm));
+
+	/*
+	 * Check for number of units. If the oid hw.acpi.battery.units is
+	 * undefined, the system does not have a battery slot. In this case
+	 * just quit.
+	 */
+	if ((units = get_units(bm)) == 0) {
+		/* No battery slot. */
+		return (0);
+	} else if (units < 0)
+		ERROR(bm, -1, 0, true, "get_units()");
+#endif	/* !TEST */
+	if (dsbbatmon_poll(bm) == -1)
+		ERROR(bm, -1, 0, true, "dsbbatmon_poll()");
+	return (1);
 }
 
 int
@@ -256,14 +261,22 @@ poll_acpi(dsbbatmon_t *bm)
 	static time_t  t0 = 0;
 
 	d = rand() % 5;
+	
 	get_units(bm);
-	if (bm->units < 1)
-		return (-1);
+
 	if (t0 == 0) {
 		t0 = time(NULL);
-		bm->acpi.cap = 60;
+		if (bm->units == 0)
+			bm->acpi.cap = -1;
+		else
+			bm->acpi.cap = 60;
 		bm->acpi.status = ACPI_STATUS_DISCHARGING;
 	}
+	if (bm->units == 0) {
+		bm->have_batt = false;
+		return (0);
+	}
+	bm->have_batt = true;
 	if ((p = read_cmd()) != NULL) {
 		switch (p[0]) {
 		case 'a':
@@ -304,9 +317,14 @@ poll_acpi(dsbbatmon_t *bm)
 		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "ioctl(ACPIIO_ACAD_GET_STATUS)");
 	}
-	if ((battio.battinfo.state & ACPI_BATT_STAT_INVALID) ||
-	    battio.battinfo.cap < 0)
+	/*
+	 * If cap == -1, there is no battery installed.
+	 */
+	if (battio.battinfo.cap < 0) {
+		bm->have_batt = false;
 		return (0);
+	}
+	bm->have_batt = true;
 	bm->acpi.cap = battio.battinfo.cap;
 	bm->acpi.min = battio.battinfo.min;
 
