@@ -62,6 +62,7 @@ typedef struct dsbbatmon_s {
 	int     slen;
 	int     socket;
 	int	units;
+	bool	have_batt;
 	bool	conn_replaced;
 	char    errmsg[DSBBATMON_ERRBUF_SZ];
 	char   *lnbuf;
@@ -70,7 +71,6 @@ typedef struct dsbbatmon_s {
 
 extern int	   dsbbatmon_init(dsbbatmon_t *);
 extern int	   dsbbatmon_check_for_batt_event(dsbbatmon_t *);
-extern int	   dsbbatmon_check_battery_presence(dsbbatmon_t *);
 extern int	   dsbbatmon_poll(dsbbatmon_t *);
 extern bool	   dsbbatmon_battery_present(dsbbatmon_t *);
 extern bool	   dsbbatmon_devd_connection_replaced(dsbbatmon_t *bm);
