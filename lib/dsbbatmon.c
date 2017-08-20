@@ -50,12 +50,16 @@
 } while (0)
 
 static int   devd_connect(void);
-static int   uconnect(const char *path);
-static int   get_units(dsbbatmon_t *bm);
-static int   poll_acpi(dsbbatmon_t *bm);
+static int   uconnect(const char *);
+static int   poll_acpi(dsbbatmon_t *);
+#ifdef TEST
+static int   get_battery_presence(void);
+#else
+static int   get_units(dsbbatmon_t *);
+#endif
 static bool  is_batt_event(char *str);
 static void  set_error(dsbbatmon_t *, int, bool, const char *, ...);
-static char *read_devd_event(dsbbatmon_t *bm, int *error);
+static char *read_devd_event(dsbbatmon_t *, int *);
 
 bool
 dsbbatmon_battery_present(dsbbatmon_t *bm)
@@ -189,25 +193,26 @@ set_error(dsbbatmon_t *bm, int error, bool prepend, const char *fmt, ...)
 
 #ifdef TEST
 static int
-get_units(dsbbatmon_t *bm)
+get_battery_presence()
 {
-	int   c;
+	int   c, exists;
 	char  n[2];
 	FILE *fp;
 
-	if ((fp = fopen(PATH_TEST_UNIT_FILE, "r")) == NULL) {
-		err(EXIT_FAILURE, "fopen(%s)", PATH_TEST_UNIT_FILE);
+	if ((fp = fopen(PATH_TEST_PRESENCE_FILE, "r")) == NULL) {
+		err(EXIT_FAILURE, "fopen(%s)", PATH_TEST_PRESENCE_FILE);
 	}
 	if ((c = fgetc(fp)) == EOF) {
 		if (ferror(fp))
 			err(EXIT_FAILURE, "fgetc()");
+		exists = 0;
 	} else {
 		n[0] = c; n[1] = '\0';
-		bm->units = strtol(n, NULL, 10);
+		exists = strtol(n, NULL, 10);
 	}
 	(void)fclose(fp);
 
-	return (bm->units);
+	return (exists);
 }
 #else
 static int
@@ -262,21 +267,20 @@ poll_acpi(dsbbatmon_t *bm)
 
 	d = rand() % 5;
 	
-	get_units(bm);
-
+	if (get_battery_presence() != 0)
+		bm->have_batt = true;
+	else
+		bm->have_batt = false;
 	if (t0 == 0) {
 		t0 = time(NULL);
-		if (bm->units == 0)
+		if (!bm->have_batt)
 			bm->acpi.cap = -1;
 		else
 			bm->acpi.cap = 60;
 		bm->acpi.status = ACPI_STATUS_DISCHARGING;
 	}
-	if (bm->units == 0) {
-		bm->have_batt = false;
+	if (!bm->have_batt)
 		return (0);
-	}
-	bm->have_batt = true;
 	if ((p = read_cmd()) != NULL) {
 		switch (p[0]) {
 		case 'a':
