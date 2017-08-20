@@ -322,9 +322,11 @@ poll_acpi(dsbbatmon_t *bm)
 		    "ioctl(ACPIIO_ACAD_GET_STATUS)");
 	}
 	/*
-	 * If cap == -1, there is no battery installed.
+	 * If cap == -1, or state == ACPI_BATT_STAT_NOT_PRESENT, there is no
+	 * battery installed.
 	 */
-	if (battio.battinfo.cap < 0) {
+	if (battio.battinfo.state == ACPI_BATT_STAT_NOT_PRESENT ||
+	    battio.battinfo.cap < 0) {
 		bm->have_batt = false;
 		return (0);
 	}
