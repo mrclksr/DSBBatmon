@@ -37,7 +37,7 @@ extern "C" {
 # define PATH_DEVD_SOCKET	 "/var/run/devd.pipe"
 #else
 # define PATH_DEVD_SOCKET	 "/tmp/dsbbatmon-test.socket"
-# define PATH_TEST_UNIT_FILE	 "/tmp/dsbbatmon-test.units"
+# define PATH_TEST_PRESENCE_FILE "/tmp/dsbbatmon-test.presence"
 #endif
 #define ACPIDEV			 "/dev/acpi"
 
