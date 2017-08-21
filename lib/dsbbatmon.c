@@ -85,12 +85,10 @@ dsbbatmon_poll(dsbbatmon_t *bm)
 	return (0);
 }
 
+#ifdef TEST
 int
 dsbbatmon_init(dsbbatmon_t *bm)
 {
-#ifndef TEST
-	int units;
-#endif
 	bm->lnbuf = NULL;
 	bm->errmsg[0] = '\0';
 	bm->conn_replaced = false;
@@ -98,7 +96,120 @@ dsbbatmon_init(dsbbatmon_t *bm)
 
 	if ((bm->socket = devd_connect()) == -1) 
 		ERROR(bm, -1, 0, true, "devd_connect()");
-#ifndef TEST
+	if (dsbbatmon_poll(bm) == -1)
+		ERROR(bm, -1, 0, true, "dsbbatmon_poll()");
+	return (1);
+}
+
+static int
+get_battery_presence()
+{
+	int   c, exists;
+	char  n[2];
+	FILE *fp;
+
+	if ((fp = fopen(PATH_TEST_PRESENCE_FILE, "r")) == NULL) {
+		err(EXIT_FAILURE, "fopen(%s)", PATH_TEST_PRESENCE_FILE);
+	}
+	if ((c = fgetc(fp)) == EOF) {
+		if (ferror(fp))
+			err(EXIT_FAILURE, "fgetc()");
+		exists = 0;
+	} else {
+		n[0] = c; n[1] = '\0';
+		exists = strtol(n, NULL, 10);
+	}
+	(void)fclose(fp);
+
+	return (exists);
+}
+
+char *
+read_cmd()
+{
+	static int  init = 1;
+	static char buf[128];
+
+	if (init) {
+		setvbuf(stdin, (char *)NULL, _IONBF, 0);
+		if (fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin),
+		    F_GETFL) | O_NONBLOCK) == -1) {
+			err(EXIT_FAILURE, "fcntl()");
+		}
+		init = 0;
+	}
+	if (fgets(buf, sizeof(buf) - 1, stdin) != NULL)
+		return (buf);
+	return (NULL);
+}
+
+static int
+poll_acpi(dsbbatmon_t *bm)
+{
+	int	       d;
+	char	      *p;
+	static time_t  t0 = 0;
+
+	d = rand() % 5;
+	
+	if (get_battery_presence() != 0)
+		bm->have_batt = true;
+	else
+		bm->have_batt = false;
+	if (t0 == 0) {
+		t0 = time(NULL);
+		if (!bm->have_batt)
+			bm->acpi.cap = -1;
+		else
+			bm->acpi.cap = 60;
+		bm->acpi.status = ACPI_STATUS_DISCHARGING;
+	}
+	if (!bm->have_batt)
+		return (0);
+	if ((p = read_cmd()) != NULL) {
+		switch (p[0]) {
+		case 'a':
+			bm->acpi.status = ACPI_STATUS_ACLINE;
+			break;
+		case 'c':
+			bm->acpi.status = ACPI_STATUS_CHARGING;
+			break;
+		case 'd':
+			bm->acpi.status = ACPI_STATUS_DISCHARGING;
+		}
+	}
+	if (time(NULL) - t0 >= 10) {
+		if (bm->acpi.status == ACPI_STATUS_DISCHARGING)
+			bm->acpi.cap -= d;
+		else if (bm->acpi.status == ACPI_STATUS_CHARGING)
+			bm->acpi.cap += d;
+		else if (bm->acpi.status == ACPI_STATUS_ACLINE)
+			return (0);
+		if (bm->acpi.cap <= 0)
+			bm->acpi.cap = 0;
+		else if (bm->acpi.cap >= 100) {
+			bm->acpi.cap = 100;
+			bm->acpi.status = ACPI_STATUS_ACLINE;
+		}
+		t0 = time(NULL);
+	}
+	bm->acpi.min = 100;
+
+	return (0);
+}
+#else	/* !TEST */
+int
+dsbbatmon_init(dsbbatmon_t *bm)
+{
+	int units;
+
+	bm->lnbuf = NULL;
+	bm->errmsg[0] = '\0';
+	bm->conn_replaced = false;
+	bm->rd = bm->slen = bm->bufsz = 0;
+
+	if ((bm->socket = devd_connect()) == -1) 
+		ERROR(bm, -1, 0, true, "devd_connect()");
 	if ((bm->acpi.acpifd = open(ACPIDEV, O_RDONLY)) == -1)
 		ERROR(bm, -1, FATAL_SYSERR, false, "open(%s)", ACPIDEV);
 
@@ -112,11 +223,69 @@ dsbbatmon_init(dsbbatmon_t *bm)
 		return (0);
 	} else if (units < 0)
 		ERROR(bm, -1, 0, true, "get_units()");
-#endif	/* !TEST */
 	if (dsbbatmon_poll(bm) == -1)
 		ERROR(bm, -1, 0, true, "dsbbatmon_poll()");
 	return (1);
 }
+
+static int
+get_units(dsbbatmon_t *bm)
+{
+	int    units;
+	size_t sz;
+
+	bm->units = 0; sz = sizeof(int);
+	if (sysctlbyname("hw.acpi.battery.units", &units, &sz, NULL, 0) != 0) {
+		if (errno == ENOENT)
+			return (0);
+		ERROR(bm, -1, FATAL_SYSERR, false,
+		    "sysctlbyname(hw.acpi.battery.units)");
+	}
+	bm->units = units;
+
+	return (units);
+}
+
+static int
+poll_acpi(dsbbatmon_t *bm)
+{
+	int	     ac;
+	static union acpi_battery_ioctl_arg battio;
+
+	battio.unit = 0;
+	if (ioctl(bm->acpi.acpifd, ACPIIO_BATT_GET_BATTINFO, &battio) == -1) {
+		ERROR(bm, -1, FATAL_SYSERR, false,
+		    "ioctl(ACPIIO_BATT_GET_BATTINFO)");
+	}
+	if (ioctl(bm->acpi.acpifd, ACPIIO_ACAD_GET_STATUS, &ac) == -1) {
+		ERROR(bm, -1, FATAL_SYSERR, false,
+		    "ioctl(ACPIIO_ACAD_GET_STATUS)");
+	}
+	/*
+	 * If cap == -1, or state == ACPI_BATT_STAT_NOT_PRESENT, there is no
+	 * battery installed.
+	 */
+	if (battio.battinfo.state == ACPI_BATT_STAT_NOT_PRESENT ||
+	    battio.battinfo.cap < 0) {
+		bm->have_batt = false;
+		return (0);
+	}
+	bm->have_batt = true;
+	bm->acpi.cap = battio.battinfo.cap;
+	bm->acpi.min = battio.battinfo.min;
+
+	if (battio.battinfo.state & ACPI_BATT_STAT_DISCHARG)
+		bm->acpi.status = ACPI_STATUS_DISCHARGING;
+	else if (battio.battinfo.state & ACPI_BATT_STAT_CHARGING)
+		bm->acpi.status = ACPI_STATUS_CHARGING;
+	else if (ac > 0)
+		bm->acpi.status = ACPI_STATUS_ACLINE;
+	else
+		bm->acpi.status = ACPI_STATUS_UNKNOWN;
+
+	return (0);
+}
+#endif	/* TEST */
 
 int
 dsbbatmon_check_for_batt_event(dsbbatmon_t *bm)
@@ -189,160 +358,6 @@ set_error(dsbbatmon_t *bm, int error, bool prepend, const char *fmt, ...)
 		    ":%s", strerror(_errno));
 		errno = 0;
 	}
-}
-
-#ifdef TEST
-static int
-get_battery_presence()
-{
-	int   c, exists;
-	char  n[2];
-	FILE *fp;
-
-	if ((fp = fopen(PATH_TEST_PRESENCE_FILE, "r")) == NULL) {
-		err(EXIT_FAILURE, "fopen(%s)", PATH_TEST_PRESENCE_FILE);
-	}
-	if ((c = fgetc(fp)) == EOF) {
-		if (ferror(fp))
-			err(EXIT_FAILURE, "fgetc()");
-		exists = 0;
-	} else {
-		n[0] = c; n[1] = '\0';
-		exists = strtol(n, NULL, 10);
-	}
-	(void)fclose(fp);
-
-	return (exists);
-}
-#else
-static int
-get_units(dsbbatmon_t *bm)
-{
-	int    units;
-	size_t sz;
-
-	bm->units = 0; sz = sizeof(int);
-	if (sysctlbyname("hw.acpi.battery.units", &units, &sz, NULL, 0) != 0) {
-		if (errno == ENOENT)
-			return (0);
-		ERROR(bm, -1, FATAL_SYSERR, false,
-		    "sysctlbyname(hw.acpi.battery.units)");
-	}
-	bm->units = units;
-
-	return (units);
-}
-#endif	/* TEST */
-
-#ifdef TEST
-char *
-read_cmd()
-{
-	static int  init = 1;
-	static char buf[128];
-
-	if (init) {
-		setvbuf(stdin, (char *)NULL, _IONBF, 0);
-		if (fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin),
-		    F_GETFL) | O_NONBLOCK) == -1) {
-			err(EXIT_FAILURE, "fcntl()");
-		}
-		init = 0;
-	}
-	if (fgets(buf, sizeof(buf) - 1, stdin) != NULL)
-		return (buf);
-	return (NULL);
-}
-#endif
-
-static int
-poll_acpi(dsbbatmon_t *bm)
-{
-	int	     ac;
-	static union acpi_battery_ioctl_arg battio;
-#ifdef TEST
-	int	       d;
-	char	      *p;
-	static time_t  t0 = 0;
-
-	d = rand() % 5;
-	
-	if (get_battery_presence() != 0)
-		bm->have_batt = true;
-	else
-		bm->have_batt = false;
-	if (t0 == 0) {
-		t0 = time(NULL);
-		if (!bm->have_batt)
-			bm->acpi.cap = -1;
-		else
-			bm->acpi.cap = 60;
-		bm->acpi.status = ACPI_STATUS_DISCHARGING;
-	}
-	if (!bm->have_batt)
-		return (0);
-	if ((p = read_cmd()) != NULL) {
-		switch (p[0]) {
-		case 'a':
-			bm->acpi.status = ACPI_STATUS_ACLINE;
-			break;
-		case 'c':
-			bm->acpi.status = ACPI_STATUS_CHARGING;
-			break;
-		case 'd':
-			bm->acpi.status = ACPI_STATUS_DISCHARGING;
-		}
-	}
-	if (time(NULL) - t0 >= 10) {
-		if (bm->acpi.status == ACPI_STATUS_DISCHARGING)
-			bm->acpi.cap -= d;
-		else if (bm->acpi.status == ACPI_STATUS_CHARGING)
-			bm->acpi.cap += d;
-		else if (bm->acpi.status == ACPI_STATUS_ACLINE)
-			return (0);
-		if (bm->acpi.cap <= 0)
-			bm->acpi.cap = 0;
-		else if (bm->acpi.cap >= 100) {
-			bm->acpi.cap = 100;
-			bm->acpi.status = ACPI_STATUS_ACLINE;
-		}
-		t0 = time(NULL);
-	}
-	bm->acpi.min = 100;
-
-	return (0);
-#endif
-	battio.unit = 0;
-	if (ioctl(bm->acpi.acpifd, ACPIIO_BATT_GET_BATTINFO, &battio) == -1) {
-		ERROR(bm, -1, FATAL_SYSERR, false,
-		    "ioctl(ACPIIO_BATT_GET_BATTINFO)");
-	}
-	if (ioctl(bm->acpi.acpifd, ACPIIO_ACAD_GET_STATUS, &ac) == -1) {
-		ERROR(bm, -1, FATAL_SYSERR, false,
-		    "ioctl(ACPIIO_ACAD_GET_STATUS)");
-	}
-	/*
-	 * If cap == -1, or state == ACPI_BATT_STAT_NOT_PRESENT, there is no
-	 * battery installed.
-	 */
-	if (battio.battinfo.state == ACPI_BATT_STAT_NOT_PRESENT ||
-	    battio.battinfo.cap < 0) {
-		bm->have_batt = false;
-		return (0);
-	}
-	bm->have_batt = true;
-	bm->acpi.cap = battio.battinfo.cap;
-	bm->acpi.min = battio.battinfo.min;
-
-	if (battio.battinfo.state & ACPI_BATT_STAT_DISCHARG)
-		bm->acpi.status = ACPI_STATUS_DISCHARGING;
-	else if (battio.battinfo.state & ACPI_BATT_STAT_CHARGING)
-		bm->acpi.status = ACPI_STATUS_CHARGING;
-	else if (ac > 0)
-		bm->acpi.status = ACPI_STATUS_ACLINE;
-	else
-		bm->acpi.status = ACPI_STATUS_UNKNOWN;
-	return (0);
 }
 
 static char *
