@@ -265,9 +265,13 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "ioctl(ACPIIO_BATT_GET_BIF)");
 	}
-	bm->acpi.wcap = battio.bif.wcap * 100 / battio.bif.lfcap;
-	bm->acpi.lcap = battio.bif.lcap * 100 / battio.bif.lfcap;
-
+	if (!battio.bif.lfcap || !battio.bif.wcap || !battio.bif.lcap) {
+		bm->acpi.wcap = 10;
+		bm->acpi.lcap =  5;
+	} else {
+		bm->acpi.wcap = battio.bif.wcap * 100 / battio.bif.lfcap;
+		bm->acpi.lcap = battio.bif.lcap * 100 / battio.bif.lfcap;
+	}
 	return (0);
 }
 
