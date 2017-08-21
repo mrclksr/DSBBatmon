@@ -1,0 +1,11 @@
+ABOUT
+     DSBBatmon is a Qt battery monitor for FreeBSD. It displays the battery's
+     current status, capacity, and remaining time when you move the mouse
+     cursor over its tray icon. Clicking on the tray icon brings up/hides the
+     settings window. DSBBatmon can automatically shut down or suspend your
+     system if the battery's capacity falls short of a certain percental value.
+
+INSTALLATION
+     # git clone https://github.com/mrclksr/dsbbatmon.git
+     # cd dsbbatmon && qmake && make && make install
+
