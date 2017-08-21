@@ -101,7 +101,7 @@ QIcon BattIndicator::createIcon(int status)
 	pix.fill(QColor(0, 0, 0, 0));
 	QPainter p(&pix);
 
-	if (status < 0 && -status < 20)
+	if (status < 0 && -status <= bm->acpi.wcap)
 		color = critical;
 	else if (status < 0)
 		color = discharge;
