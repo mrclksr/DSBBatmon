@@ -189,6 +189,12 @@ void BattIndicator::update()
 	if (dsbbatmon_poll(bm) == -1)
 		qh_err(0, EXIT_FAILURE, "%s", dsbbatmon_strerror(bm));
 	if (dsbbatmon_battery_present(bm)) {
+		/* Update battery info in case it changed. */
+		if (dsbbatmon_get_batt_info(bm) == -1) {
+			qh_err(0, EXIT_FAILURE,
+			    "dsbbatmon_get_batt_info(): %s",
+			    dsbbatmon_strerror(bm));
+		}
 		showTrayIcon();
 		pollTimer->start(pollInterval * 1000);
 	} else {
