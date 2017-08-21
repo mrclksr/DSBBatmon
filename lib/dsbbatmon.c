@@ -197,6 +197,15 @@ poll_acpi(dsbbatmon_t *bm)
 
 	return (0);
 }
+
+int
+dsbbatmon_get_batt_info(dsbbatmon_t *bm)
+{
+	bm->acpi.wcap =  5;
+	bm->acpi.lcap = 10;
+
+	return (0);
+}
 #else	/* !TEST */
 int
 dsbbatmon_init(dsbbatmon_t *bm)
@@ -244,6 +253,22 @@ get_units(dsbbatmon_t *bm)
 	bm->units = units;
 
 	return (units);
+}
+
+int
+dsbbatmon_get_batt_info(dsbbatmon_t *bm)
+{
+	static union acpi_battery_ioctl_arg battio;
+
+	battio.unit = 0;
+	if (ioctl(bm->acpi.acpifd, ACPIIO_BATT_GET_BIF, &battio) == -1) {
+		ERROR(bm, -1, FATAL_SYSERR, false,
+		    "ioctl(ACPIIO_BATT_GET_BIF)");
+	}
+	bm->acpi.wcap = (bif.wcap == -1) ?  5: bif.wcap;
+	bm->acpi.lcap = (bif.lcap == -1) ? 10: bif.lcap;
+
+	return (0);
 }
 
 static int

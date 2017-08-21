@@ -46,6 +46,8 @@
 
 typedef struct acpi_s {
 	int cap;	/* Battery capacity */
+	int lcap;	/* Low capacity */
+	int wcap;	/* Warn capacity */
 	int status;	/* (Dis)charging, AC Power */
 #define ACPI_STATUS_DISCHARGING  1
 #define ACPI_STATUS_CHARGING	 2
@@ -70,6 +72,7 @@ typedef struct dsbbatmon_s {
 
 __BEGIN_DECLS
 extern int	   dsbbatmon_init(dsbbatmon_t *);
+extern int	   dsbbatmon_get_batt_info(dsbbatmon_t *);
 extern int	   dsbbatmon_check_for_batt_event(dsbbatmon_t *);
 extern int	   dsbbatmon_poll(dsbbatmon_t *);
 extern bool	   dsbbatmon_battery_present(dsbbatmon_t *);

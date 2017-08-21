@@ -289,11 +289,12 @@ void BattIndicator::pollACPI()
 				shutdown = true;
 				showShutdownWin();
 			}
-		} else if (acpi_prev.cap <= 0 && bm->acpi.cap < 40) {
+		} else if (acpi_prev.cap <= 0 && bm->acpi.cap < bm->acpi.lcap) {
 			showWarnMsg();
-		} else if ((acpi_prev.cap >= 40 && bm->acpi.cap < 40) ||
-		    (acpi_prev.cap >= 20 && bm->acpi.cap < 20) ||
-		    (acpi_prev.cap >= 5 && bm->acpi.cap < 5)) {
+		} else if ((acpi_prev.cap >= bm->acpi.lcap &&
+		    bm->acpi.cap < bm->acpi.lcap) ||
+		    (acpi_prev.cap >= bm->acpi.wcap &&
+		    bm->acpi.cap < bm->acpi.wcap)) {
 			showWarnMsg();
 		}
 		acpi_prev = bm->acpi;
@@ -361,7 +362,7 @@ void BattIndicator::showWarnMsg()
 {
 	QString msg = QString(tr("Battery capacity at %1%")).arg(bm->acpi.cap);
 	trayIcon->showMessage(QString(tr("Warning")), msg,
-	    bm->acpi.cap <= 5 ? QSystemTrayIcon::Critical : \
+	    bm->acpi.cap <= bm->acpi.wcap ? QSystemTrayIcon::Critical : \
 	    QSystemTrayIcon::Warning, 20000);
 }
 
