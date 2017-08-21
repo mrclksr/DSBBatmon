@@ -21,11 +21,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #ifndef _DSBBATMON_H_
 #define _DSBBATMON_H_
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 #include <errno.h>
 #include <stdbool.h>
 #include <sys/types.h>
@@ -69,13 +68,13 @@ typedef struct dsbbatmon_s {
 	acpi_t  acpi;
 } dsbbatmon_t;
 
+__BEGIN_DECLS
 extern int	   dsbbatmon_init(dsbbatmon_t *);
 extern int	   dsbbatmon_check_for_batt_event(dsbbatmon_t *);
 extern int	   dsbbatmon_poll(dsbbatmon_t *);
 extern bool	   dsbbatmon_battery_present(dsbbatmon_t *);
 extern bool	   dsbbatmon_devd_connection_replaced(dsbbatmon_t *bm);
 extern const char *dsbbatmon_strerror(dsbbatmon_t *bm);
-#ifdef __cplusplus
-}
-#endif  /* __cplusplus */
+__END_DECLS
+
 #endif	/* !_DSBBATMON_H_ */
