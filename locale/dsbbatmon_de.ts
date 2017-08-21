@@ -27,7 +27,7 @@ Kapazität: %1%</translation>
         <source>
 Time remaining: %1:%2</source>
         <translation>
-Zeit verbleibend:%1:%2</translation>
+Zeit verbleibend: %1:%2</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="306"/>
