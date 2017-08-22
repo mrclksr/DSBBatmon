@@ -43,7 +43,6 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	this->cfg = cfg;
 
 	if ((ret = dsbbatmon_init(bm)) == 0) {
-		/* There is no battery slot. */
 		errx(EXIT_FAILURE, "No battery slot installed.");
 	} else if (ret == -1) {
 		qh_err(0, EXIT_FAILURE, "dsbbatmon_init(): %s",
