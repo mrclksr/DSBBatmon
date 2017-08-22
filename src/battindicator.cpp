@@ -35,20 +35,21 @@
 
 BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	QWidget(parent) {
+	int ret;
+
 	bm        = new dsbbatmon_t;
 	trayTimer = new QTimer(this);
 	pollTimer = new QTimer(this);
 	this->cfg = cfg;
 
-	loadIcons(); updateSettings();
-	switch (dsbbatmon_init(bm)) {
-	case  0:
+	if ((ret = dsbbatmon_init(bm)) == 0) {
 		/* There is no battery slot. */
 		errx(EXIT_FAILURE, "No battery slot installed.");
-	case -1:
+	} else if (ret == -1) {
 		qh_err(0, EXIT_FAILURE, "dsbbatmon_init(): %s",
 		    dsbbatmon_strerror(bm));
 	}
+	loadIcons(); updateSettings();
 	initSocketNotifier(bm->socket);
 
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
