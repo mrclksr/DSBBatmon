@@ -6,6 +6,12 @@ ABOUT
      system if the battery's capacity falls short of a certain percental value.
 
 INSTALLATION
+   Dependencies
+     DSBBatmon depends on devel/qt5-buildtools, devel/qt5-core,
+     devel/qt5-linguisttools, devel/qt5-qmake, x11-toolkits/qt5-gui, and
+     x11-toolkits/qt5-widgets
+
+   Building and installation
      # git clone https://github.com/mrclksr/dsbbatmon.git
      # cd dsbbatmon && qmake && make && make install
 
