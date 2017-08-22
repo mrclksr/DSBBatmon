@@ -39,6 +39,9 @@
 
 #include "dsbbatmon.h"
 
+#define DEFAULT_WCAP	     10
+#define DEFAULT_LCAP	     5
+
 #define SOCK_ERR_IO_ERROR    2
 #define SOCK_ERR_CONN_CLOSED 1
 
@@ -201,8 +204,8 @@ poll_acpi(dsbbatmon_t *bm)
 int
 dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 {
-	bm->acpi.lcap =  5;
-	bm->acpi.wcap = 10;
+	bm->acpi.wcap = DEFAULT_WCAP;
+	bm->acpi.lcap = DEFAULT_LCAP;
 
 	return (0);
 }
@@ -265,13 +268,17 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "ioctl(ACPIIO_BATT_GET_BIF)");
 	}
-	if (!battio.bif.lfcap || !battio.bif.wcap || !battio.bif.lcap) {
-		bm->acpi.wcap = 10;
-		bm->acpi.lcap =  5;
+	if (!battio.bif.lfcap == 0) {
+		bm->acpi.wcap = DEFAULT_WCAP;
+		bm->acpi.lcap = DEFAULT_LCAP;
 	} else {
 		bm->acpi.wcap = battio.bif.wcap * 100 / battio.bif.lfcap;
 		bm->acpi.lcap = battio.bif.lcap * 100 / battio.bif.lfcap;
 	}
+	if (bm->acpi.wcap == 0)
+		bm->acpi.wcap = DEFAULT_WCAP;
+	if (bm->acpi.lcap == 0)
+		bm->acpi.lcap = DEFAUlT_LCAP;
 	return (0);
 }
 
