@@ -268,7 +268,7 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 		ERROR(bm, -1, FATAL_SYSERR, false,
 		    "ioctl(ACPIIO_BATT_GET_BIF)");
 	}
-	if (!battio.bif.lfcap == 0) {
+	if (battio.bif.lfcap == 0) {
 		bm->acpi.wcap = DEFAULT_WCAP;
 		bm->acpi.lcap = DEFAULT_LCAP;
 	} else {
@@ -278,7 +278,7 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 	if (bm->acpi.wcap == 0)
 		bm->acpi.wcap = DEFAULT_WCAP;
 	if (bm->acpi.lcap == 0)
-		bm->acpi.lcap = DEFAUlT_LCAP;
+		bm->acpi.lcap = DEFAULT_LCAP;
 	return (0);
 }
 
