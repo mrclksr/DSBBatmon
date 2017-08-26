@@ -13,5 +13,8 @@ INSTALLATION
 
    Building and installation
      # git clone https://github.com/mrclksr/dsbbatmon.git
-     # cd dsbbatmon && qmake && make && make install
+     # git clone https://github.com/mrclksr/dsbcfg.git
+
+     # cd dsbbatmon && qmake && make
+     # make install
 
