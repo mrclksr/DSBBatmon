@@ -30,8 +30,8 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
     QDialog(parent) {
 	this->cfg = cfg;
 
-	QIcon winIcon	 = qh_loadIcon("preferences-system", NULL);
-	QIcon okIcon	 = qh_loadStockIcon(QStyle::SP_DialogOkButton, NULL);
+	QIcon winIcon	 = qh_loadIcon("preferences-system", 0);
+	QIcon okIcon	 = qh_loadStockIcon(QStyle::SP_DialogOkButton, 0);
 	QIcon cancelIcon = qh_loadStockIcon(QStyle::SP_DialogCancelButton,
 	    NULL);
 	shutdownSb	     = new QSpinBox;
@@ -107,8 +107,9 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 
 	layout->addWidget(useIconThemeCb);
 	layout->addLayout(bbox);
+
 	vbox->addStretch(1);
-	setLayout(layout);
+
 	setWindowIcon(winIcon);
 	setWindowTitle(tr("Preferences"));
 
