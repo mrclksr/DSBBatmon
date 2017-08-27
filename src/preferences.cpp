@@ -34,22 +34,21 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	QIcon okIcon	 = qh_loadStockIcon(QStyle::SP_DialogOkButton, NULL);
 	QIcon cancelIcon = qh_loadStockIcon(QStyle::SP_DialogCancelButton,
 	    NULL);
-	shutdownSb	     = new QSpinBox(this);
-	pollIvalSb	     = new QSpinBox(this);
-	autoShutdownCb	     = new QCheckBox(tr("Auto suspend/shutdown"), this);
-	useIconThemeCb	     = new QCheckBox(tr("Use theme icons for tray"),
-				   this);
-	container	     = new QWidget();
-	shutdownCmd	     = new QLineEdit();
-	suspendCmd	     = new QLineEdit();
+	shutdownSb	     = new QSpinBox;
+	pollIvalSb	     = new QSpinBox;
+	autoShutdownCb	     = new QCheckBox(tr("Auto suspend/shutdown"));
+	useIconThemeCb	     = new QCheckBox(tr("Use theme icons for tray"));
+	container	     = new QWidget;
+	shutdownCmd	     = new QLineEdit;
+	suspendCmd	     = new QLineEdit;
 	suspendRb	     = new QRadioButton(tr("Suspend"));
 	shutdownRb	     = new QRadioButton(tr("Shutdown"));
 	QFormLayout *form    = new QFormLayout;
 	QFormLayout *form2   = new QFormLayout;
-	QHBoxLayout *hbox    = new QHBoxLayout();
-	QHBoxLayout *bbox    = new QHBoxLayout();
+	QHBoxLayout *hbox    = new QHBoxLayout;
+	QHBoxLayout *bbox    = new QHBoxLayout;
 	QVBoxLayout *vbox    = new QVBoxLayout(container);
-	QVBoxLayout *layout  = new QVBoxLayout();
+	QVBoxLayout *layout  = new QVBoxLayout(this);
 	QPushButton *ok	     = new QPushButton(okIcon, tr("&Ok"));
 	QPushButton *cancel  = new QPushButton(cancelIcon, tr("&Cancel"));
 

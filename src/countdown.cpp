@@ -25,6 +25,7 @@
 #include <QTimer>
 #include <QStyle>
 #include <QDesktopWidget>
+
 #include "countdown.h"
 #include "qt-helper/qt-helper.h"
 
@@ -38,24 +39,25 @@ Countdown::Countdown(bool suspend, int seconds, QWidget *parent)
 	QIcon pic      = qh_loadStockIcon(QStyle::SP_MessageBoxCritical, NULL);
 	QIcon tIcon    = pic;
 
-	label		    = new QLabel("", this);
+	label		    = new QLabel("");
 	timer		    = new QTimer(this);
-	QLabel	    *icon   = new QLabel();
-	QHBoxLayout *hbox   = new QHBoxLayout();
-	QVBoxLayout *layout = new QVBoxLayout();
+	QLabel	    *icon   = new QLabel;
+	QHBoxLayout *hbox   = new QHBoxLayout;
+	QVBoxLayout *layout = new QVBoxLayout(this);
 	QPushButton *cancel = new QPushButton(cnclIcon, tr("&Cancel"));
 
 	setLabelText(seconds);
-	icon->setPixmap(pic.pixmap(pic.actualSize(QSize(64, 64))));
+	icon->setPixmap(pic.pixmap(64));
+
 	setWindowIcon(tIcon);
 	setWindowTitle(tr("Critical battery capacity reached"));
 
 	hbox->setSpacing(20);
 	hbox->addWidget(icon);
 	hbox->addWidget(label, 1, Qt::AlignHCenter);
+
 	layout->addLayout(hbox);
 	layout->addWidget(cancel, 0, Qt::AlignRight);
-	setLayout(layout);
 
 	connect(timer, SIGNAL(timeout()), this, SLOT(update()));
 	connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
