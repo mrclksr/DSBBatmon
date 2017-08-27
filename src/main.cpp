@@ -25,6 +25,7 @@
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+
 #include "battindicator.h"
 #include "lib/config.h"
 #include "qt-helper/qt-helper.h"
@@ -34,11 +35,6 @@ static dsbcfg_t *cfg;
 static void
 save_config(int /* unused */)
 {
-	static sig_atomic_t block = 0;
-
-	if (block == 1)
-		return;
-	block = 1;
 	if (cfg != NULL)
 		dsbcfg_write(PROGRAM, "config", cfg);
 	exit(EXIT_SUCCESS);
