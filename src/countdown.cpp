@@ -35,8 +35,8 @@ Countdown::Countdown(bool suspend, int seconds, QWidget *parent)
 	this->suspend = suspend;
 	shutdownTime = time(NULL) + seconds;
 
-	QIcon cnclIcon = qh_loadStockIcon(QStyle::SP_DialogCancelButton, NULL);
-	QIcon pic      = qh_loadStockIcon(QStyle::SP_MessageBoxCritical, NULL);
+	QIcon cnclIcon = qh_loadStockIcon(QStyle::SP_DialogCancelButton, 0);
+	QIcon pic      = qh_loadStockIcon(QStyle::SP_MessageBoxCritical, 0);
 	QIcon tIcon    = pic;
 
 	label		    = new QLabel("");
