@@ -1,0 +1,45 @@
+.Dd $Mdocdate$
+.Dt DSBBatmon 1
+.Os
+.Sh ABOUT
+.Nm dsbbatmon
+is a Qt battery monitor for FreeBSD. It displays the battery's current status,
+capacity, and remaining time when you move the mouse cursor over its tray icon.
+.Nm
+can automatically shut down or suspend your system if the battery's
+capacity falls short of a certain percental value.
+.Sh INSTALLATION
+.Ss Dependencies
+.Nm
+depends on devel/qt5-buildtools, devel/qt5-core, devel/qt5-linguisttools,
+devel/qt5-qmake, x11-toolkits/qt5-gui, and x11-toolkits/qt5-widgets
+.Ss Building and installation
+.Bd -literal
+# git clone https://github.com/mrclksr/DSBBatmon.git
+# git clone https://github.com/mrclksr/dsbcfg.git
+
+# cd DSBBatmon && qmake && make
+# make install
+.Ed
+.Sh SETUP
+.Ss Permissions
+In order to be able to execute
+.Em shutdown
+as regular user, you can either use
+.Xr sudo 8 (see below), or you can add your username to the
+.Em operator
+group:
+.Bd -literal -offset indent
+# pw groupmod operator -m yourusername
+.Ed
+
+If you want to be able to suspend your system as
+regular user who is member of the wheel group, you can use
+.Xr sudo 8 .
+Add
+.Bd -literal -offset indent
+%wheel  ALL=(ALL) NOPASSWD: /usr/sbin/acpiconf *
+.Ed
+
+to
+.Em /usr/local/etc/sudoers .
