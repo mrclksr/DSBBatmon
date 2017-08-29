@@ -1,3 +1,5 @@
+PROGRAM = dsbbatmon
+
 isEmpty(PREFIX) {  
 	PREFIX="/usr/local"
 }
@@ -10,7 +12,6 @@ isEmpty(DATADIR) {
 	DEFINES += TEST=1
 }
 
-PROGRAM	     = dsbbatmon
 TARGET	     = $${PROGRAM}
 APPSDIR	     = $${PREFIX}/share/applications
 INSTALLS     = target desktopfile locales
