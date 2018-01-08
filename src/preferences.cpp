@@ -107,6 +107,8 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 
 	layout->addWidget(useIconThemeCb);
 	layout->addLayout(bbox);
+	layout->setContentsMargins(15, 15, 15, 15);
+
 	container->setContentsMargins(5, 5, 5, 5);
 
 	vbox->addStretch(1);
