@@ -53,7 +53,7 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
 	connect(trayTimer, SIGNAL(timeout()), this, SLOT(checkForSysTray()));
-
+	acpi_prev.cap = -1;
 	if (dsbbatmon_battery_present(bm)) {
 		pollTimer->start(pollInterval * 1000);
 		trayTimer->start(500);
@@ -195,9 +195,11 @@ void BattIndicator::update()
 			    "dsbbatmon_get_batt_info(): %s",
 			    dsbbatmon_strerror(bm));
 		}
+		acpi_prev = bm->acpi;
 		showTrayIcon();
 		pollTimer->start(pollInterval * 1000);
 	} else {
+		acpi_prev.cap = -1;
 		hideTrayIcon();
 		pollTimer->stop();
 	}
@@ -284,6 +286,8 @@ void BattIndicator::pollACPI()
 		qh_errx(0, EXIT_FAILURE, "dsbbatmon_poll(): %s",
 		    dsbbatmon_strerror(bm));
 	}
+	if (acpi_prev.cap == -1)
+		acpi_prev = bm->acpi;
 	if (bm->acpi.cap != acpi_prev.cap || bm->acpi.min != acpi_prev.min ||
 	    bm->acpi.status != acpi_prev.status) {
 		updateIcon(); updateToolTip();
