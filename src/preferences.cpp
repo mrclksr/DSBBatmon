@@ -171,6 +171,7 @@ Preferences::acceptSlot()
 		    strdup(shutdownArr.data())) == NULL)
 			qh_err(0, EXIT_FAILURE, "strdup()");
 	}
+	dsbcfg_write(PROGRAM, "config", cfg);
 	accept();
 }
 
