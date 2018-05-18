@@ -13,6 +13,7 @@ isEmpty(DATADIR) {
 }
 
 TARGET	     = $${PROGRAM}
+PATH_LOCK    = .$${PROGRAM}.lock
 APPSDIR	     = $${PREFIX}/share/applications
 INSTALLS     = target desktopfile locales
 TRANSLATIONS = locale/$${PROGRAM}_de.ts
@@ -21,6 +22,7 @@ TEMPLATE     = app
 QT	    += widgets
 INCLUDEPATH += . lib src
 DEFINES     += PROGRAM=\\\"$${PROGRAM}\\\" LOCALE_PATH=\\\"$${DATADIR}\\\"
+DEFINES	    += PATH_LOCK=\\\"$${PATH_LOCK}\\\"
 QMAKE_POST_LINK = $(STRIP) $(TARGET)
 QMAKE_EXTRA_TARGETS += distclean cleanqm readme
 
