@@ -22,6 +22,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <signal.h>
+#include <unistd.h>
+#include <pwd.h>
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
@@ -43,6 +45,9 @@ save_config(int /* unused */)
 int
 main(int argc, char *argv[])
 {
+	char	      path_lock[PATH_MAX];
+	FILE	      *fp;
+	struct passwd *pw;
 
 	(void)signal(SIGINT, save_config);
 	(void)signal(SIGTERM, save_config);
@@ -55,6 +60,21 @@ main(int argc, char *argv[])
 	if (translator.load(QLocale(), QLatin1String(PROGRAM),
 	    QLatin1String("_"), QLatin1String(LOCALE_PATH)))
 		app.installTranslator(&translator);
+	if ((pw = getpwuid(getuid())) == NULL)
+		qh_err(0, EXIT_FAILURE, "getpwuid()");
+	/* Check if another instance is already running. */
+	(void)snprintf(path_lock, sizeof(path_lock), "%s/%s", pw->pw_dir,
+	    PATH_LOCK);
+	endpwent();
+	if ((fp = fopen(path_lock, "r+")) == NULL) {
+		if (errno != ENOENT || (fp = fopen(path_lock, "w+")) == NULL)
+			qh_err(0, EXIT_FAILURE, "fopen(%s)", path_lock);
+	}
+	if (lockf(fileno(fp), F_TLOCK, 0) == -1) {
+		if (errno == EWOULDBLOCK)
+			exit(EXIT_SUCCESS);
+                qh_err(0, EXIT_FAILURE, "lockf()");
+	}
 	cfg = dsbcfg_read(PROGRAM, "config", vardefs, CFG_NVARS);
         if (cfg == NULL && errno == ENOENT) {
                 cfg = dsbcfg_new(NULL, vardefs, CFG_NVARS);
