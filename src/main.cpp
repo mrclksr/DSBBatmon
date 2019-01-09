@@ -45,8 +45,8 @@ save_config(int /* unused */)
 int
 main(int argc, char *argv[])
 {
+	int	      lockfd;
 	char	      path_lock[PATH_MAX];
-	FILE	      *fp;
 	struct passwd *pw;
 
 	(void)signal(SIGINT, save_config);
@@ -66,14 +66,12 @@ main(int argc, char *argv[])
 	(void)snprintf(path_lock, sizeof(path_lock), "%s/%s", pw->pw_dir,
 	    PATH_LOCK);
 	endpwent();
-	if ((fp = fopen(path_lock, "r+")) == NULL) {
-		if (errno != ENOENT || (fp = fopen(path_lock, "w+")) == NULL)
-			qh_err(0, EXIT_FAILURE, "fopen(%s)", path_lock);
-	}
-	if (lockf(fileno(fp), F_TLOCK, 0) == -1) {
+	if ((lockfd = open(path_lock, O_WRONLY | O_CREAT)) == -1)
+		qh_err(0, EXIT_FAILURE, "open(%s)", path_lock);
+	if (flock(lockfd, LOCK_EX | LOCK_NB) == -1) {
 		if (errno == EWOULDBLOCK)
 			exit(EXIT_SUCCESS);
-                qh_err(0, EXIT_FAILURE, "lockf()");
+		qh_err(0, EXIT_FAILURE, "flock()");
 	}
 	cfg = dsbcfg_read(PROGRAM, "config", vardefs, CFG_NVARS);
         if (cfg == NULL && errno == ENOENT) {
