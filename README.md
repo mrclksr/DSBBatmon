@@ -50,8 +50,8 @@ to
 **Note**:
 On FreeBSD &gt;= 12, members of the
 *operator*
-group are allowed to execute
-*acpiconf*.
+group are allowed to suspend the system via
+acpiconf(8).
 Using
 sudo(8)
 is not necessary.
