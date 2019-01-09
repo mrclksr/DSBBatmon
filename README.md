@@ -47,3 +47,12 @@ Add
 to
 */usr/local/etc/sudoers*.
 
+**Note**:
+On FreeBSD &gt;= 12, members of the
+*operator*
+group are allowed to execute
+*acpiconf*.
+Using
+sudo(8)
+is not necessary.
+
