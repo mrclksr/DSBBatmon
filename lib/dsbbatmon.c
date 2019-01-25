@@ -314,7 +314,12 @@ poll_acpi(dsbbatmon_t *bm)
 		bm->acpi.status = ACPI_STATUS_DISCHARGING;
 	else if (battio.battinfo.state & ACPI_BATT_STAT_CHARGING)
 		bm->acpi.status = ACPI_STATUS_CHARGING;
-	else if (ac > 0)
+	else if (bm->acpi.status == 0) {
+		if (ac <= 0)
+			bm->acpi.status = ACPI_STATUS_DISCHARGING;
+		else
+			bm->acpi.status = ACPI_STATUS_CHARGING;
+	} else if (ac > 0)
 		bm->acpi.status = ACPI_STATUS_ACLINE;
 	else
 		bm->acpi.status = ACPI_STATUS_UNKNOWN;
