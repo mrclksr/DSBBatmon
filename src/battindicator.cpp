@@ -38,6 +38,7 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	int ret;
 
 	bm        = new dsbbatmon_t;
+	trayIcon  = 0;
 	trayTimer = new QTimer(this);
 	pollTimer = new QTimer(this);
 	this->cfg = cfg;
@@ -392,6 +393,10 @@ void BattIndicator::checkForSysTray()
 
 void BattIndicator::createTrayIcon()
 {
+	if (trayIcon != 0)
+		return;
+	if (!QSystemTrayIcon::isSystemTrayAvailable())
+		return;
 	trayIcon    = new QSystemTrayIcon(this);
 	QMenu *menu = createTrayMenu();
 
