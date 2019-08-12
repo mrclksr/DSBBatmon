@@ -48,6 +48,7 @@ private slots:
 	void   trayClicked(QSystemTrayIcon::ActivationReason reason);
 	void   checkForSysTray();
 	void   catchActivated(int socket);
+	void   scrGeomChanged(const QRect &);
 private:
 	void   update();
 	void   showTrayIcon();

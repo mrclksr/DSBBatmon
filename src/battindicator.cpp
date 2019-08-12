@@ -26,6 +26,8 @@
 #include <QSystemTrayIcon>
 #include <QPainter>
 #include <QPointer>
+#include <QScreen>
+#include <QRect>
 #include <err.h>
 #include <unistd.h>
 #include "countdown.h"
@@ -61,6 +63,16 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 	} else {
 		qDebug("Battery not present. Waiting ...");
 	}
+	connect(QGuiApplication::primaryScreen(),
+	    SIGNAL(geometryChanged(const QRect &)), this,
+	    SLOT(scrGeomChanged(const QRect &)));
+}
+
+void
+BattIndicator::scrGeomChanged(const QRect &g)
+{
+	Q_UNUSED(g);
+	trayTimer->start(500);
 }
 
 void BattIndicator::initSocketNotifier(int socket)
@@ -382,6 +394,11 @@ void BattIndicator::checkForSysTray()
 {
 	static int tries = 60;
 
+	if (trayIcon != 0) {
+		tries = 60;
+		delete trayIcon;
+		trayIcon = 0;
+	}
 	if (QSystemTrayIcon::isSystemTrayAvailable()) {
 		trayTimer->stop();
 		createTrayIcon();
