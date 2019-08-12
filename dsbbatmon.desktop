@@ -5,5 +5,4 @@ Icon=battery
 Terminal=false
 StartupNotify=false
 Type=Application
-Categories=System;Application
-
+Categories=System;Monitor;Electricity;
