@@ -17,7 +17,6 @@ PATH_LOCK    = .$${PROGRAM}.lock
 APPSDIR	     = $${PREFIX}/share/applications
 INSTALLS     = target desktopfile locales
 TRANSLATIONS = locale/$${PROGRAM}_de.ts
-LANGUAGES    = de
 TEMPLATE     = app
 QT	    += widgets
 INCLUDEPATH += . lib src
@@ -63,13 +62,12 @@ readmemd.commands = mandoc -mdoc -Tmarkdown readme.mdoc | \
 			sed -e \'1,1d; \$$,\$$d\' > README.md
 
 qtPrepareTool(LRELEASE, lrelease)
-for(a, LANGUAGES) {
-	in  = locale/$${PROGRAM}_$${a}.ts
-	out = locale/$${PROGRAM}_$${a}.qm
-	locales.files += $$out
-	cmd = $$LRELEASE $$in -qm $$out
+for(a, TRANSLATIONS) {
+	cmd = $$LRELEASE $${a}
 	system($$cmd)
 }
+locales.files += locale/*.qm
+
 cleanqm.commands  = rm -f $${locales.files}
 distclean.depends = cleanqm
 
