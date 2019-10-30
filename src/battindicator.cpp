@@ -136,27 +136,38 @@ void BattIndicator::loadIcons()
 {
 	missingIcon = false;
 
-	dBattIcon[4] = qh_loadIcon("battery-full-symbolic",
+	dBattIcon[4] = qh_loadIcon("battery-full",
+				   "battery-full-symbolic",
 				   "battery", NULL);
-	dBattIcon[3] = qh_loadIcon("battery-good-symbolic",
+	dBattIcon[3] = qh_loadIcon("battery-good",
+				   "battery-good-symbolic",
 				   "battery", NULL);
-	dBattIcon[2] = qh_loadIcon("battery-low-symbolic",
+	dBattIcon[2] = qh_loadIcon("battery-low",
+				   "battery-low-symbolic",
 				   "battery-low", NULL);
-	dBattIcon[1] = qh_loadIcon("battery-caution-symbolic",
+	dBattIcon[1] = qh_loadIcon("battery-caution",
+				   "battery-caution-symbolic",
 			           "battery-caution", NULL);
-	dBattIcon[0] = qh_loadIcon("battery-empty-symbolic",
+	dBattIcon[0] = qh_loadIcon("battery-empty",
+				   "battery-empty-symbolic",
 				   "battery-low", NULL);
-	cBattIcon[4] = qh_loadIcon("battery-full-charging-symbolic",
+	cBattIcon[4] = qh_loadIcon("battery-full-charging",
+				   "battery-full-charging-symbolic",
 				   "battery", NULL);
-	cBattIcon[3] = qh_loadIcon("battery-good-charging-symbolic",
+	cBattIcon[3] = qh_loadIcon("battery-good-charging",
+				   "battery-good-charging-symbolic",
 				   "battery", NULL);
-	cBattIcon[2] = qh_loadIcon("battery-low-charging-symbolic",
+	cBattIcon[2] = qh_loadIcon("battery-low-charging",
+				   "battery-low-charging-symbolic",
 				   "battery-low", NULL);
-	cBattIcon[1] = qh_loadIcon("battery-caution-charging-symbolic",
+	cBattIcon[1] = qh_loadIcon("battery-caution-charging",
+				   "battery-caution-charging-symbolic",
 				   "battery-caution", NULL);
-	cBattIcon[0] = qh_loadIcon("battery-empty-charging-symbolic",
+	cBattIcon[0] = qh_loadIcon("battery-empty-charging",
+				   "battery-empty-charging-symbolic",
 				   "battery-low", NULL);
-	acIcon	     = qh_loadIcon("battery-full-charged-symbolic",
+	acIcon	     = qh_loadIcon("battery-full-charged",
+				   "battery-full-charged-symbolic",
 				   "battery", NULL);
 	quitIcon     = qh_loadIcon("application-exit", NULL);
 	prefsIcon    = qh_loadIcon("preferences-system", NULL);
