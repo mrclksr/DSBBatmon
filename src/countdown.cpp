@@ -24,6 +24,7 @@
 
 #include <QTimer>
 #include <QStyle>
+#include <QScreen>
 #include <QDesktopWidget>
 
 #include "countdown.h"
@@ -63,7 +64,7 @@ Countdown::Countdown(bool suspend, int seconds, QWidget *parent)
 	connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
 	show();
 	setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter,
-	    size(), qApp->desktop()->availableGeometry()));
+	    size(), qApp->primaryScreen()->geometry()));
 	timer->start(1000);
 }
 
