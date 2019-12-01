@@ -62,6 +62,7 @@ typedef struct dsbbatmon_s {
 	int     bufsz;
 	int     slen;
 	int     socket;
+	int	unit;
 	int	units;
 	bool	have_batt;
 	bool	conn_replaced;
