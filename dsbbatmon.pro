@@ -16,7 +16,8 @@ TARGET	     = $${PROGRAM}
 PATH_LOCK    = .$${PROGRAM}.lock
 APPSDIR	     = $${PREFIX}/share/applications
 INSTALLS     = target desktopfile locales
-TRANSLATIONS = locale/$${PROGRAM}_de.ts
+TRANSLATIONS = locale/$${PROGRAM}_de.ts \
+               locale/$${PROGRAM}_fr.ts
 TEMPLATE     = app
 QT	    += widgets
 INCLUDEPATH += . lib src
