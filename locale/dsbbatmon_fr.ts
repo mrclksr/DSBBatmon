@@ -1,90 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="de_DE">
+<TS version="2.1" language="fr_FR">
 <context>
     <name>BattIndicator</name>
     <message>
         <location filename="../src/battindicator.cpp" line="285"/>
         <source>Status: Charging
 Capacity: %1%</source>
-        <translation>Status: Laden
-Kapazität: %1%</translation>
+        <translation>Etat : en charge
+Capacité : %1%</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="287"/>
         <source>Status: Discharging
 Capacity: %1%</source>
-        <translation>Status: Entladen
-Kapazität: %1%</translation>
+        <translation>Etat : se décharge
+Capacité : %1%</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="289"/>
         <source>Status: Running on AC power</source>
-        <translation>Status: Netzteil</translation>
+        <translation>Etat : fonctionne sur alimentation</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="297"/>
         <source>
 Time remaining: %1:%2</source>
         <translation>
-Zeit verbleibend: %1:%2</translation>
+Temps restant : %1 : %2</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="342"/>
         <source>&amp;Quit</source>
-        <translation>&amp;Beenden</translation>
+        <translation>&amp;Quitter</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="344"/>
         <source>&amp;Preferences</source>
-        <translation>&amp;Einstellungen</translation>
+        <translation>&amp;Préférences</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="398"/>
         <source>Battery capacity at %1%</source>
-        <translation>Akkuladung by %1%</translation>
+        <translation>Capacité de la batterie à %1%</translation>
     </message>
     <message>
         <location filename="../src/battindicator.cpp" line="399"/>
         <source>Warning</source>
-        <translation>Warnung</translation>
+        <translation>Avertissement</translation>
     </message>
 </context>
 <context>
     <name>Countdown</name>
     <message>
-        <source>Cancel</source>
-        <translation type="vanished">Abbrechen</translation>
-    </message>
-    <message>
         <location filename="../src/countdown.cpp" line="48"/>
         <source>&amp;Cancel</source>
-        <translation>&amp;Abbrechen</translation>
+        <translation>&amp;Cancel</translation>
     </message>
     <message>
         <location filename="../src/countdown.cpp" line="54"/>
         <source>Critical battery capacity reached</source>
-        <translation>Kritische Akkuladung erreicht</translation>
+        <translation>Capacité critique de la batterie atteinte</translation>
     </message>
     <message>
         <location filename="../src/countdown.cpp" line="78"/>
         <source>Suspending system in %1 %2</source>
-        <translation>Versetze das System in den Ruhemodus in %1 %2</translation>
+        <translation>Mise en veille du système dans %1 %2</translation>
     </message>
     <message>
         <location filename="../src/countdown.cpp" line="80"/>
         <source>Shutting down system in %1 %2</source>
-        <translation>Fahre System herunter in %1 %2</translation>
+        <translation>Arrêt du système dans %1 %2</translation>
     </message>
     <message>
         <location filename="../src/countdown.cpp" line="82"/>
         <source>Second</source>
-        <translation>Sekunde</translation>
+        <translation>Seconde</translation>
     </message>
     <message>
         <location filename="../src/countdown.cpp" line="82"/>
         <source>Seconds</source>
-        <translation>Sekunden</translation>
+        <translation>Secondes</translation>
     </message>
 </context>
 <context>
@@ -92,22 +88,22 @@ Zeit verbleibend: %1:%2</translation>
     <message>
         <location filename="../src/preferences.cpp" line="39"/>
         <source>Auto suspend/shutdown</source>
-        <translation>Automatisch in Ruhemodus versetzen/Herunterfahren</translation>
+        <translation>Mise en veille/arrêt automatique</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="40"/>
         <source>Use theme icons for tray</source>
-        <translation>Benutze Symbolthema für Tray</translation>
+        <translation>Utiliser les icônes du thème</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="44"/>
         <source>Suspend</source>
-        <translation>Ruhemodus</translation>
+        <translation>Mise en veille</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="45"/>
         <source>Shutdown</source>
-        <translation>Herunterfahren</translation>
+        <translation>Arrêt</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="52"/>
@@ -117,32 +113,32 @@ Zeit verbleibend: %1:%2</translation>
     <message>
         <location filename="../src/preferences.cpp" line="53"/>
         <source>&amp;Cancel</source>
-        <translation>&amp;Abbrechen</translation>
+        <translation>&amp;Cancel</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="55"/>
         <source>if battery capacity drops below</source>
-        <translation>bei einer Akkuladung unter</translation>
+        <translation>Si la capacité de la batterie passe sous</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="93"/>
         <source>Suspend command:</source>
-        <translation>Suspend-Befehl:</translation>
+        <translation>Commande de mise en veille :</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="94"/>
         <source>Shutdown command:</source>
-        <translation>Shutdown-Befehl:</translation>
+        <translation>Commande d&apos;arrêt :</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="104"/>
         <source>ACPI poll interval:</source>
-        <translation>ACPI-Pollintervall</translation>
+        <translation>Intervalle de sondage ACPI :</translation>
     </message>
     <message>
         <location filename="../src/preferences.cpp" line="117"/>
         <source>Preferences</source>
-        <translation>Einstellungen</translation>
+        <translation>Préférences</translation>
     </message>
 </context>
 </TS>
