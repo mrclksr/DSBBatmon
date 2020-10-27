@@ -213,7 +213,7 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 int
 dsbbatmon_init(dsbbatmon_t *bm)
 {
-	int i, units;
+	int units;
 
 	bm->lnbuf = NULL;
 	bm->errmsg[0] = '\0';
@@ -235,13 +235,10 @@ dsbbatmon_init(dsbbatmon_t *bm)
 		return (0);
 	} else if (units < 0)
 		ERROR(bm, -1, 0, true, "get_units()");
-	for (i = 0; i < units; i++) {
-		bm->unit = i;
-		if (dsbbatmon_poll(bm) == -1)
-			ERROR(bm, -1, 0, true, "dsbbatmon_poll()");
-		if (bm->have_batt)
-			break;
-	}
+	
+	bm->unit = ACPI_BATTERY_ALL_UNITS;
+	if (dsbbatmon_poll(bm) == -1)
+		ERROR(bm, -1, 0, true, "dsbbatmon_poll()");
 	if (!bm->have_batt)
 		bm->unit = 0;
 	return (1);
