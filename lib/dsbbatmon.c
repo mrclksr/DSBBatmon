@@ -268,9 +268,9 @@ dsbbatmon_get_batt_info(dsbbatmon_t *bm)
 	static union acpi_battery_ioctl_arg battio;
 
 	battio.unit = bm->unit;
-	if (ioctl(bm->acpi.acpifd, ACPIIO_BATT_GET_BIF, &battio) == -1) {
+	if (ioctl(bm->acpi.acpifd, ACPIIO_BATT_GET_BATTINFO, &battio) == -1) {
 		ERROR(bm, -1, FATAL_SYSERR, false,
-		    "ioctl(ACPIIO_BATT_GET_BIF)");
+		    "ioctl(ACPIIO_BATT_GET_BATTINFO)");
 	}
 	if (battio.bif.lfcap == 0) {
 		bm->acpi.wcap = DEFAULT_WCAP;
