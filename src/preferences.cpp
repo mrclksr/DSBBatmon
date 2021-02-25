@@ -22,7 +22,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <QFrame>
+#include <QGroupBox>
+#include <QDirIterator>
+
 #include "preferences.h"
 #include "qt-helper/qt-helper.h"
 
@@ -43,8 +45,12 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	suspendCmd	     = new QLineEdit;
 	suspendRb	     = new QRadioButton(tr("Suspend"));
 	shutdownRb	     = new QRadioButton(tr("Shutdown"));
+	QGroupBox   *bhvgrp  = new QGroupBox(tr("Behavior"));
+	QGroupBox   *viwgrp  = new QGroupBox(tr("Tray Icon Theme"));
 	QFormLayout *form    = new QFormLayout;
 	QFormLayout *form2   = new QFormLayout;
+	QVBoxLayout *bhvbox  = new QVBoxLayout;
+	QVBoxLayout *viwbox  = new QVBoxLayout;
 	QHBoxLayout *hbox    = new QHBoxLayout;
 	QHBoxLayout *bbox    = new QHBoxLayout;
 	QVBoxLayout *vbox    = new QVBoxLayout(container);
@@ -85,6 +91,7 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	hbox->addWidget(shutdownRb, 0, Qt::AlignLeft);
 	hbox->addWidget(str, 1, Qt::AlignLeft);
 	hbox->addWidget(shutdownSb, 1, Qt::AlignRight);
+	bhvbox->addWidget(container);
 
 	suspendRb->setChecked(dsbcfg_getval(cfg, CFG_SUSPEND).boolean);
 	shutdownRb->setChecked(!dsbcfg_getval(cfg, CFG_SUSPEND).boolean);
@@ -97,15 +104,22 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 	vbox->setContentsMargins(0, 0, 0, 0);
 	vbox->addLayout(form);
 
-	layout->addWidget(container);
-	layout->addWidget(autoShutdownCb);
-	layout->addWidget(mkLine());
+	bhvbox->addWidget(autoShutdownCb);
 
 	form2->addRow(new QLabel(tr("ACPI poll interval:")), pollIvalSb);
-	form2->addRow(mkLine());
-	layout->addLayout(form2);
 
-	layout->addWidget(useIconThemeCb);
+	bhvbox->addLayout(form2);
+	bhvgrp->setLayout(bhvbox);
+	layout->addWidget(bhvgrp);
+
+	createThemeComboBox();
+
+	viwbox->addWidget(themeBox);
+	viwbox->addWidget(useIconThemeCb);
+	viwgrp->setLayout(viwbox);
+
+	layout->addWidget(viwgrp);
+
 	layout->addLayout(bbox);
 	layout->setContentsMargins(15, 15, 15, 15);
 
@@ -123,22 +137,48 @@ Preferences::Preferences(dsbcfg_t *cfg, QWidget *parent) :
 }
 
 void
+Preferences::createThemeComboBox()
+{
+	themeBox	  = new QComboBox;
+	QString curTheme  = QIcon::themeName();
+	QStringList paths = QIcon::themeSearchPaths();
+	QStringList names;
+	QString themeName(dsbcfg_getval(cfg, CFG_TRAY_THEME).string);
+
+	if (themeName.isNull())
+		themeName = curTheme;
+	for (int i = 0; i < paths.size(); i++) {
+		QDirIterator it(paths.at(i));
+		while (it.hasNext()) {
+			QString indexPath = QString("%1/index.theme").arg(it.next());
+			if (!it.fileInfo().isDir())
+				continue;
+			QString name = it.fileName();
+			if (name == "." || name == "..")
+				continue;
+			QFile indexFile(indexPath);
+			if (!indexFile.exists())
+				continue;
+			indexFile.close();
+			names.append(name);
+		}
+	}
+	names.sort(Qt::CaseInsensitive);
+	names.removeDuplicates();
+	themeBox->addItems(names);
+
+	int index = themeBox->findText(themeName, Qt::MatchExactly);
+	if (index != -1)
+		themeBox->setCurrentIndex(index);
+}
+
+void
 Preferences::catchCbStateChanged(int state)
 {
 	if (state == Qt::Checked)
 		container->setEnabled(true);
 	else if (state == Qt::Unchecked)
 		container->setEnabled(false);
-}
-
-QFrame *
-Preferences::mkLine()
-{
-	QFrame *line = new QFrame(this);
-	line->setFrameShape(QFrame::HLine);
-	line->setFrameShadow(QFrame::Sunken);
-
-	return (line);
 }
 
 void
@@ -171,6 +211,10 @@ Preferences::acceptSlot()
 		    strdup(shutdownArr.data())) == NULL)
 			qh_err(0, EXIT_FAILURE, "strdup()");
 	}
+	dsbcfg_val_t val;
+	val.string = themeBox->currentText().toLatin1().data();
+	if (val.string != (char *)0 && *val.string != '\0')
+		dsbcfg_setval(cfg, CFG_TRAY_THEME, val);
 	dsbcfg_write(PROGRAM, "config", cfg);
 	accept();
 }

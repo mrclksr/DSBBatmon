@@ -33,6 +33,7 @@
 #include <QBoxLayout>
 #include <QSpinBox>
 #include <QWidget>
+#include <QComboBox>
 #include <QCheckBox>
 #include "lib/config.h"
 
@@ -40,11 +41,10 @@ class Preferences : public QDialog {
 	Q_OBJECT
 public:
 	Preferences(dsbcfg_t *cfg, QWidget *parent = 0);
-public slots:
+private slots:
+	void createThemeComboBox(void);
 	void catchCbStateChanged(int state);
 	void acceptSlot();
-private:
-	QFrame *mkLine();
 private:
 	dsbcfg_t     *cfg;
 	QWidget      *container;
@@ -52,6 +52,7 @@ private:
 	QSpinBox     *pollIvalSb;
 	QCheckBox    *autoShutdownCb;
 	QCheckBox    *useIconThemeCb;
+	QComboBox    *themeBox;
 	QLineEdit    *shutdownCmd;
 	QLineEdit    *suspendCmd;
 	QRadioButton *shutdownRb;

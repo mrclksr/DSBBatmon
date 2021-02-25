@@ -30,6 +30,7 @@
 #include <QRect>
 #include <err.h>
 #include <unistd.h>
+
 #include "countdown.h"
 #include "preferences.h"
 #include "battindicator.h"
@@ -51,12 +52,13 @@ BattIndicator::BattIndicator(dsbcfg_t *cfg, QWidget *parent) :
 		qh_err(0, EXIT_FAILURE, "dsbbatmon_init(): %s",
 		    dsbbatmon_strerror(bm));
 	}
-	loadIcons(); updateSettings();
+	updateSettings();
 	initSocketNotifier(bm->socket);
 
 	connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollACPI()));
 	connect(trayTimer, SIGNAL(timeout()), this, SLOT(checkForSysTray()));
 	acpi_prev.cap = -1;
+
 	if (dsbbatmon_battery_present(bm)) {
 		pollTimer->start(pollInterval * 1000);
 		trayTimer->start(500);
@@ -89,18 +91,17 @@ void BattIndicator::updateSettings()
 	capShutdown  = dsbcfg_getval(cfg, CFG_CAP_SHUTDOWN).integer;
 	pollInterval = dsbcfg_getval(cfg, CFG_POLL_INTERVAL).integer;
 	autoShutdown = dsbcfg_getval(cfg, CFG_AUTOSHUTDOWN).boolean;
+	useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
 
 	if (doSuspend)
 		command = dsbcfg_getval(cfg, CFG_SUSPEND_CMD).string;
 	else
 		command = dsbcfg_getval(cfg, CFG_SHUTDOWN_CMD).string;
-	if (useIconTheme != dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean) {
-		useIconTheme = dsbcfg_getval(cfg, CFG_USE_ICON_THEME).boolean;
-		loadIcons(); updateIcon();
-	}
 	if (bm->acpi.cap > capShutdown)
 		shutdownCanceled = false;
 	pollTimer->start(pollInterval * 1000);
+	loadIcons();
+	updateIcon();
 }
 
 QIcon BattIndicator::createIcon(int status)
@@ -134,39 +135,52 @@ QIcon BattIndicator::createIcon(int status)
 
 void BattIndicator::loadIcons()
 {
+	char *trayTheme = dsbcfg_getval(cfg, CFG_TRAY_THEME).string;
+
 	missingIcon = false;
 
-	dBattIcon[4] = qh_loadIcon("battery-full",
+	dBattIcon[4] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-full",
 				   "battery-full-symbolic",
 				   "battery", NULL);
-	dBattIcon[3] = qh_loadIcon("battery-good",
+	dBattIcon[3] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-good",
 				   "battery-good-symbolic",
 				   "battery", NULL);
-	dBattIcon[2] = qh_loadIcon("battery-low",
+	dBattIcon[2] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-low",
 				   "battery-low-symbolic",
 				   "battery-low", NULL);
-	dBattIcon[1] = qh_loadIcon("battery-caution",
+	dBattIcon[1] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-caution",
 				   "battery-caution-symbolic",
 			           "battery-caution", NULL);
-	dBattIcon[0] = qh_loadIcon("battery-empty",
+	dBattIcon[0] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-empty",
 				   "battery-empty-symbolic",
 				   "battery-low", NULL);
-	cBattIcon[4] = qh_loadIcon("battery-full-charging",
+	cBattIcon[4] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-full-charging",
 				   "battery-full-charging-symbolic",
 				   "battery", NULL);
-	cBattIcon[3] = qh_loadIcon("battery-good-charging",
+	cBattIcon[3] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-good-charging",
 				   "battery-good-charging-symbolic",
 				   "battery", NULL);
-	cBattIcon[2] = qh_loadIcon("battery-low-charging",
+	cBattIcon[2] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-low-charging",
 				   "battery-low-charging-symbolic",
 				   "battery-low", NULL);
-	cBattIcon[1] = qh_loadIcon("battery-caution-charging",
+	cBattIcon[1] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-caution-charging",
 				   "battery-caution-charging-symbolic",
 				   "battery-caution", NULL);
-	cBattIcon[0] = qh_loadIcon("battery-empty-charging",
+	cBattIcon[0] = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-empty-charging",
 				   "battery-empty-charging-symbolic",
 				   "battery-low", NULL);
-	acIcon	     = qh_loadIcon("battery-full-charged",
+	acIcon	     = qh_loadStaticIconFromTheme(trayTheme,
+				   "battery-full-charged",
 				   "battery-full-charged-symbolic",
 				   "battery", NULL);
 	quitIcon     = qh_loadIcon("application-exit", NULL);
@@ -353,10 +367,9 @@ QMenu *BattIndicator::createTrayMenu()
 
 void BattIndicator::showConfigMenu()
 {
-	QPointer<Preferences> prefs = new Preferences(cfg);
-	if (prefs->exec() == (int)QDialog::Accepted)
+	Preferences prefs(cfg);
+	if (prefs.exec() == QDialog::Accepted)
 		updateSettings();
-	delete prefs;
 }
 
 void BattIndicator::showShutdownWin()

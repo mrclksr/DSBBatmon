@@ -53,6 +53,11 @@ dsbcfg_vardef_t vardefs[] = {
 	{
 		"poll_interval", DSBCFG_VAR_INTEGER, CFG_POLL_INTERVAL,
 		DSBCFG_VAL(5)
+	},
+	{
+		"tray_theme", DSBCFG_VAR_STRING, CFG_TRAY_THEME,
+		DSBCFG_VAL((char *)0)
 	}
+
 };
 
